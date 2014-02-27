@@ -39,6 +39,22 @@ DRConnection::~DRConnection() {
 
 
 
+#pragma mark -
+
+QString DRConnection::URLIdentifier() {
+    QString identifier = "";
+
+    identifier += QString(wi_string_cstring(wi_url_user(this->url)));
+    identifier += QString("@");
+    identifier += QString(wi_string_cstring(wi_url_host(this->url)));
+
+    qDebug() << identifier;
+
+    return identifier;
+}
+
+
+
 
 #pragma mark -
 

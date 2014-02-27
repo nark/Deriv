@@ -31,6 +31,8 @@ public:
     explicit                    DRConnection(wi_url_t *url, QObject *parent = 0);
     ~DRConnection();
 
+    QString                     URLIdentifier();
+
 public slots:
     void                        connect();
     void                        disconnect();

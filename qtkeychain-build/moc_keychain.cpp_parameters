@@ -1,0 +1,7 @@
+-F/Applications/Qt5.2.1/5.2.1/clang_64/lib
+-I/Applications/Qt5.2.1/5.2.1/clang_64/lib/QtCore.framework/Headers
+-I/Applications/Qt5.2.1/5.2.1/clang_64/mkspecs/macx-clang
+-I/Users/nark/Development/Me/Qt/Deriv/qtkeychain-build
+-o
+/Users/nark/Development/Me/Qt/Deriv/qtkeychain-build/moc_keychain.cpp
+/Users/nark/Development/Me/Qt/Deriv/qtkeychain/keychain.h

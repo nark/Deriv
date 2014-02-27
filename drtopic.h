@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QDateTime>
 #include <wired/wired.h>
+#include "drp7messageobject.h"
 
 class DRTopic : public QObject
 {

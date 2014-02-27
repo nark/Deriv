@@ -14,6 +14,7 @@ class DRChatController : public DRConnectionController
     Q_OBJECT
 public:
     DRTopic             *topic;
+    QString             *chatBuffer;
 
     explicit            DRChatController(DRConnection* connection);
                         ~DRChatController();

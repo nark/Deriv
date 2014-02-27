@@ -7,7 +7,7 @@
 #CONFIG      -= x86_64
 #CONFIG      += x86
 
-QT          += core gui network
+QT          += core gui network sql
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -28,7 +28,9 @@ SOURCES  += main.cpp\
     druserscontroller.cpp \
     drtopic.cpp \
     drpreferenceswindow.cpp \
-    draboutwindow.cpp
+    draboutwindow.cpp \
+    drdatabasemanager.cpp \
+    drconnectionobject.cpp
 
 HEADERS  += drmainwindow.h \
             config.h \
@@ -44,7 +46,9 @@ HEADERS  += drmainwindow.h \
     druserscontroller.h \
     drtopic.h \
     drpreferenceswindow.h \
-    draboutwindow.h
+    draboutwindow.h \
+    drdatabasemanager.h \
+    drconnectionobject.h
 
 FORMS    += drmainwindow.ui \
     drconnectdialog.ui \

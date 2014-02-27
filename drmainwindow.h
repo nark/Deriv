@@ -30,8 +30,8 @@ public:
     explicit                DRMainWindow(QWidget *parent = 0);
     ~DRMainWindow();
 
+    void                    selectConnection(DRConnection *connection);
     void                    setConnection(DRConnection *connection);
-
 
 public slots:
     void                    disconnect();
@@ -75,6 +75,9 @@ private:
 
     void                    reloadTreeView();
     void                    reloadUserList();
+    void                    reloadChatView();
+
+    void                    appendChat(QString string, DRConnection *connection);
 
     DRConnection*           selectedConnection();
     DRConnectionItem*       itemForConnection(DRConnection *connection);

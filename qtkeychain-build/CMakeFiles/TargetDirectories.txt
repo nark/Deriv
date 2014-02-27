@@ -1,0 +1,4 @@
+/Users/nark/Development/Me/Qt/Deriv/qtkeychain-build/CMakeFiles/messages.dir
+/Users/nark/Development/Me/Qt/Deriv/qtkeychain-build/CMakeFiles/qt5keychain.dir
+/Users/nark/Development/Me/Qt/Deriv/qtkeychain-build/CMakeFiles/testclient.dir
+/Users/nark/Development/Me/Qt/Deriv/qtkeychain-build/CMakeFiles/translations.dir

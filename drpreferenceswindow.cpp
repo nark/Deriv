@@ -46,21 +46,47 @@ DRPreferencesWindow::DRPreferencesWindow(QWidget *parent) :
     ui(new Ui::DRPreferencesWindow)
 {
     ui->setupUi(this);
+
+    this->settings = new QSettings(QString("read-write.fr"), QString("Deriv"));
+
+    if(this->settings->contains("DRDefaultNick"))
+        this->settings->setValue("DRDefaultNick", QString("Deriv"));
+
+    this->settings->setValue("DRDefaultStatus", QString("Qt Client"));
+    this->settings->setValue("DRShowConnectAtStartup", true);
 }
+
 
 
 
 DRPreferencesWindow::~DRPreferencesWindow()
 {
     delete ui;
+    delete settings, settings = NULL;
 }
-
 
 
 
 #pragma mark -
 
-void DRPreferencesWindow::on_lineEdit_editingFinished()
-{
-   //QSettings
+void DRPreferencesWindow::show() {
+    ui->nickLabel->setText(this->settings->value("DRDefaultNick").toString());
+
+    QMainWindow::show();
 }
+
+
+
+#pragma mark -
+
+void DRPreferencesWindow::on_nickLabel_editingFinished() {
+    QString nick = ui->nickLabel->text();
+
+    if(nick.length() > 0)
+        this->settings->setValue("DRDefaultNick", nick);
+
+    this->settings->sync();
+}
+
+
+

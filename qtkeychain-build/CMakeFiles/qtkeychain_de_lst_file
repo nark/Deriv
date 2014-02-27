@@ -1,0 +1,14 @@
+-I/Users/nark/Development/Me/Qt/Deriv/qtkeychain-build
+-I/Applications/Qt5.2.1/5.2.1/clang_64/mkspecs/macx-clang
+-I/Applications/Qt5.2.1/5.2.1/clang_64/lib/QtCore.framework/Headers
+-I/Applications/Qt5.2.1/5.2.1/clang_64/lib/QtCore.framework
+/Users/nark/Development/Me/Qt/Deriv/qtkeychain/qkeychain_export.h
+/Users/nark/Development/Me/Qt/Deriv/qtkeychain/keychain_p.h
+/Users/nark/Development/Me/Qt/Deriv/qtkeychain/keychain.h
+/Users/nark/Development/Me/Qt/Deriv/qtkeychain/gnomekeyring_p.h
+/Users/nark/Development/Me/Qt/Deriv/qtkeychain/testclient.cpp
+/Users/nark/Development/Me/Qt/Deriv/qtkeychain/keychain_win.cpp
+/Users/nark/Development/Me/Qt/Deriv/qtkeychain/keychain_unix.cpp
+/Users/nark/Development/Me/Qt/Deriv/qtkeychain/keychain_mac.cpp
+/Users/nark/Development/Me/Qt/Deriv/qtkeychain/keychain.cpp
+/Users/nark/Development/Me/Qt/Deriv/qtkeychain/gnomekeyring.cpp

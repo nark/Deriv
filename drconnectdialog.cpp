@@ -19,6 +19,8 @@ DRConnectDialog::DRConnectDialog(QWidget *parent) :
     ui(new Ui::DRConnectDialog)
 {
     ui->setupUi(this);
+
+    ui->progressBar->setHidden(true);
 }
 
 
@@ -77,6 +79,18 @@ void DRConnectDialog::accept()
 
     url = wi_url_with_string(url_string);
 
+    this->connection = DRConnectionsController::instance()->connectionForURL(url);
+    ui->progressBar->setHidden(false);
+
+    if(this->connection != NULL) {
+        DRMainWindow *mainWindow = (DRMainWindow *)this->parent();
+
+        mainWindow->selectConnection(this->connection);
+
+        done(Accepted);
+        return;
+    }
+
     wi_log_info(WI_STR("Connecting initial socket..."));
 
     QThread* thread = new QThread;
@@ -100,10 +114,9 @@ void DRConnectDialog::connectSucceeded() {
     DRConnectionsController::instance()->addConnection(this->connection);
 
     DRMainWindow *mainWindow = (DRMainWindow *)this->parent();
-
-    //mainWindow->setConnection(this->connection);
     mainWindow->show();
 
+    ui->progressBar->setHidden(true);
     done(Accepted);
 }
 

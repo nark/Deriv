@@ -1,0 +1,1 @@
+/usr/bin/c++    -Wl,-search_paths_first -Wl,-headerpad_max_install_names   CMakeFiles/testclient.dir/testclient.cpp.o  -o testclient  libqt5keychain.0.2.0.dylib /Applications/Qt5.2.1/5.2.1/clang_64/lib/QtCore.framework/QtCore -framework CoreFoundation -framework Security 

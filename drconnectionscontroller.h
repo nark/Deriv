@@ -4,7 +4,7 @@
 #include <QObject>
 #include <QMutex>
 #include <QList>
-
+#include <wired/wired.h>
 #include "drconnection.h"
 
 
@@ -23,10 +23,12 @@ public:
     void                                    removeConnection(DRConnection *connection);
     bool                                    hasConnection(DRConnection *connection);
 
+    DRConnection*                           connectionAtIndex(int index);
+    DRConnection*                           connectionForIdentifier(QString identifier);
+    DRConnection*                           connectionForURL(wi_url_t *url);
 
 private:
     explicit                                DRConnectionsController(QObject* parent = 0);
-    DRConnection*                           connectionAtIndex(int index);
 
 signals:
     void                                    connectionAdded(DRConnection *connection);

@@ -34,7 +34,10 @@
      <number>0</number>
     </property>
     <property name="bottomMargin">
-     <number>10</number>
+     <number>0</number>
+    </property>
+    <property name="spacing">
+     <number>0</number>
     </property>
     <item row="0" column="2">
      <widget class="QListView" name="userList">
@@ -43,6 +46,9 @@
         <width>250</width>
         <height>16777215</height>
        </size>
+      </property>
+      <property name="focusPolicy">
+       <enum>Qt::TabFocus</enum>
       </property>
      </widget>
     </item>
@@ -129,6 +135,9 @@
           <height>16777215</height>
          </size>
         </property>
+        <property name="lineWidth">
+         <number>1</number>
+        </property>
         <property name="undoRedoEnabled">
          <bool>false</bool>
         </property>
@@ -155,6 +164,9 @@
         <width>250</width>
         <height>16777215</height>
        </size>
+      </property>
+      <property name="focusPolicy">
+       <enum>Qt::TabFocus</enum>
       </property>
      </widget>
     </item>
@@ -222,7 +234,11 @@
    <addaction name="actionFiles"/>
    <addaction name="actionTransfers"/>
   </widget>
-  <widget class="QStatusBar" name="statusBar"/>
+  <widget class="QStatusBar" name="statusBar">
+   <property name="sizeGripEnabled">
+    <bool>true</bool>
+   </property>
+  </widget>
   <action name="actionBoards">
    <property name="checkable">
     <bool>false</bool>

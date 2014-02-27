@@ -1,3 +1,4 @@
+
 #include "drchatcontroller.h"
 #include "druserscontroller.h"
 
@@ -9,6 +10,7 @@ DRChatController::DRChatController(DRConnection *connection) :
     DRConnectionController(connection)
 {
     this->topic = NULL;
+    this->chatBuffer = new QString("");
 
     QObject::connect(this->connection,  SIGNAL(receivedMessage(wi_p7_message_t*)),
                      this,              SLOT(receivedMessage(wi_p7_message_t*)));
@@ -18,6 +20,9 @@ DRChatController::DRChatController(DRConnection *connection) :
 DRChatController::~DRChatController() {
     if(this->topic != NULL)
         delete this->topic, this->topic = NULL;
+
+    if(this->chatBuffer)
+        delete this->chatBuffer, this->chatBuffer = NULL;
 }
 
 

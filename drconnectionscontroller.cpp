@@ -1,3 +1,5 @@
+
+#include <QListIterator>
 #include "drconnectionscontroller.h"
 
 
@@ -99,4 +101,37 @@ DRConnection* DRConnectionsController::connectionAtIndex(int index) {
     }
 
     return connection;
+}
+
+
+
+
+DRConnection* DRConnectionsController::connectionForIdentifier(QString identifier) {
+    QListIterator<DRConnection*> it(*this->connections);
+
+    while (it.hasNext()) {
+        DRConnection *connection = it.next();
+        if(connection->URLIdentifier() == identifier)
+            return connection;
+    }
+    return NULL;
+}
+
+
+
+
+DRConnection* DRConnectionsController::connectionForURL(wi_url_t *url) {
+    QListIterator<DRConnection*> it(*this->connections);
+    QString identifier = "";
+
+    identifier += QString(wi_string_cstring(wi_url_user(url)));
+    identifier += QString("@");
+    identifier += QString(wi_string_cstring(wi_url_host(url)));
+
+    while (it.hasNext()) {
+        DRConnection *connection = it.next();
+        if(connection->URLIdentifier() == identifier)
+            return connection;
+    }
+    return NULL;
 }

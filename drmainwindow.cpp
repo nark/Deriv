@@ -6,6 +6,7 @@
 #include <QListIterator>
 #include <QString>
 #include <QMutex>
+#include <qtkeychain/keychain.h>
 #include "drmainwindow.h"
 #include "ui_drmainwindow.h"
 #include "drconnectdialog.h"
@@ -157,8 +158,45 @@ DRMainWindow::~DRMainWindow() {
 
 #pragma mark -
 
+void DRMainWindow::selectConnection(DRConnection *connection) {
+    DRConnectionItem *item = this->itemForConnection(connection);
+
+    if(item == NULL)
+        return;
+
+    QModelIndex itemIndex = this->treeModel->indexFromItem(item);
+
+    if(itemIndex.row() == -1)
+        return;
+
+    ui->treeView->selectionModel()->clear();
+    ui->treeView->selectionModel()->select(itemIndex, QItemSelectionModel::Select);
+
+    this->setConnection(connection);
+    this->reloadUserList();
+    this->reloadChatView();
+}
+
+
+
+
+
 void DRMainWindow::setConnection(DRConnection *connection) {
+    if(this->connection != NULL) {
+        QObject::disconnect(this->connection, SIGNAL(receivedError(wi_p7_message_t *)), this, SLOT(receivedError(wi_p7_message_t *)));
+
+        QObject::disconnect(this->connection->chatController, SIGNAL(chatControllerReceivedChatMe(DRConnection*,QString,DRUser*)), this, SLOT(chatControllerReceivedChatMe(DRConnection*,QString,DRUser*)));
+        QObject::disconnect(this->connection->chatController, SIGNAL(chatControllerReceivedChatSay(DRConnection*,QString,DRUser*)), this, SLOT(chatControllerReceivedChatSay(DRConnection*,QString,DRUser*)));
+        QObject::disconnect(this->connection->chatController, SIGNAL(chatControllerTopicChanged(DRConnection*,DRTopic*)), this, SLOT(chatControllerTopicChanged(DRConnection*,DRTopic*)));
+
+        QObject::disconnect(this->connection->usersController, SIGNAL(usersControllerUserListLoaded(DRConnection *)), this, SLOT(usersControllerUserListLoaded(DRConnection *)));
+        QObject::disconnect(this->connection->usersController, SIGNAL(usersControllerUserJoined(DRConnection *, DRUser*)), this, SLOT(usersControllerUserJoined(DRConnection *, DRUser*)));
+        QObject::disconnect(this->connection->usersController, SIGNAL(usersControllerUserLeave(DRConnection *, DRUser*)), this, SLOT(usersControllerUserLeave(DRConnection *, DRUser*)));
+    }
+
     this->connection = connection;
+
+    qDebug() << "setConnection";
 
     if(connection->connected) {
         this->setWindowTitle(QString(wi_string_cstring(this->connection->server->name)));
@@ -182,6 +220,7 @@ void DRMainWindow::setConnection(DRConnection *connection) {
 
 
 
+
 #pragma mark -
 
 void DRMainWindow::disconnect() {
@@ -196,13 +235,15 @@ void DRMainWindow::disconnect() {
 
     connection->disconnect();
 
-    QObject::disconnect(this, SLOT(chatControllerReceivedChatMe(QString,DRUser*)));
-    QObject::disconnect(this, SLOT(chatControllerReceivedChatSay(QString,DRUser*)));
-    QObject::disconnect(this, SLOT(chatControllerTopicChanged(DRTopic*)));
+    QObject::disconnect(SIGNAL(chatControllerReceivedChatMe(DRConnection *)), this);
 
-    QObject::disconnect(this, SLOT(usersControllerUserListLoaded()));
-    QObject::disconnect(this, SLOT(usersControllerUserJoined(DRUser*)));
-    QObject::disconnect(this, SLOT(usersControllerUserLeave(DRUser*)));
+//    QObject::disconnect(this, SLOT(chatControllerReceivedChatMe(QString,DRUser*)));
+//    QObject::disconnect(this, SLOT(chatControllerReceivedChatSay(QString,DRUser*)));
+//    QObject::disconnect(this, SLOT(chatControllerTopicChanged(DRTopic*)));
+
+//    QObject::disconnect(this, SLOT(usersControllerUserListLoaded()));
+//    QObject::disconnect(this, SLOT(usersControllerUserJoined(DRUser*)));
+//    QObject::disconnect(this, SLOT(usersControllerUserLeave(DRUser*)));
 
     this->reloadTreeView();
     this->reloadUserList();
@@ -238,13 +279,14 @@ void DRMainWindow::receivedError(wi_p7_message_t *message) {
 #pragma mark -
 
 void DRMainWindow::chatControllerReceivedChatSay(DRConnection *connection, QString string, DRUser *user) {
-    ui->chatOutputTextEdit->appendPlainText(string);
+    qDebug() << "chatControllerReceivedChatSay";
+    this->appendChat(string, connection);
 }
 
 
 
 void DRMainWindow::chatControllerReceivedChatMe(DRConnection *connection, QString string, DRUser *user) {
-    ui->chatOutputTextEdit->appendPlainText(string);
+    this->appendChat(string, connection);
 }
 
 
@@ -254,7 +296,7 @@ void DRMainWindow::chatControllerTopicChanged(DRConnection *connection, DRTopic 
     ui->topicLabel->setText(topicString);
 
     QString string = QString("<< Topic changed to: ") + *topic->topic + QString(" by ") + *topic->nick + QString(" >>");
-    ui->chatOutputTextEdit->appendPlainText(string);
+    this->appendChat(string, connection);
 }
 
 
@@ -274,7 +316,7 @@ void DRMainWindow::usersControllerUserJoined(DRConnection *connection, DRUser *u
     QString nick = QString(wi_string_cstring(user->nick));
     QString string = QString("<< ") + nick + QString(" has joined >>");
 
-    ui->chatOutputTextEdit->appendPlainText(string);
+    this->appendChat(string, connection);
 }
 
 
@@ -283,7 +325,7 @@ void DRMainWindow::usersControllerUserLeave(DRConnection *connection, DRUser *us
     QString nick = QString(wi_string_cstring(user->nick));
     QString string = QString("<< ") + nick + QString(" has left >>");
 
-    ui->chatOutputTextEdit->appendPlainText(string);
+    this->appendChat(string, connection);
 }
 
 
@@ -341,6 +383,41 @@ void DRMainWindow::reloadUserList() {
     }
 
      ui->userList->repaint();
+}
+
+
+
+
+
+void DRMainWindow::reloadChatView() {
+    DRConnection *connection = NULL;
+
+    connection = this->selectedConnection();
+
+    if(connection == NULL) {
+        ui->chatOutputTextEdit->setPlainText("");
+        return;
+    }
+
+    DRChatController *cc = connection->chatController;
+    ui->chatOutputTextEdit->setPlainText(*cc->chatBuffer);
+}
+
+
+
+
+
+
+
+void DRMainWindow::appendChat(QString string, DRConnection *connection) {
+    DRConnection *selectedConnection = this->selectedConnection();
+
+    if(connection == selectedConnection) {
+        ui->chatOutputTextEdit->appendPlainText(string);
+    }
+    else {
+        connection->chatController->chatBuffer->append(string+"\n");
+    }
 }
 
 
@@ -456,7 +533,9 @@ void DRMainWindow::treeViewSelectionDidChange() {
 
     if(item->connection != NULL) {
         this->setConnection(connection);
+
         this->reloadUserList();
+        this->reloadChatView();
     }
 }
 
