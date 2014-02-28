@@ -1,7 +1,28 @@
+/*
+    Deriv is a cross-platform client for th Wired 2.0 protocol
+    Copyright (C) 2014  Rafael Warnault, rw@read-write.fr
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
 
 #include <QListIterator>
+#include <QDebug>
 #include "drconnectionscontroller.h"
-
+#include "drpreferenceswindow.h"
+#include "main.h"
 
 
 
@@ -40,6 +61,9 @@ void DRConnectionsController::drop() {
 
 DRConnectionsController::DRConnectionsController(QObject* parent) : QObject( parent ) {
     this->connections = new QList<DRConnection *>();
+
+    QObject::connect(DRPreferencesWindow::instance(), SIGNAL(userNickDidChange(QString)), this, SLOT(userNickDidChange(QString)));
+    QObject::connect(DRPreferencesWindow::instance(), SIGNAL(userStatusDidChange(QString)), this, SLOT(userStatusDidChange(QString)));
 }
 
 
@@ -135,3 +159,41 @@ DRConnection* DRConnectionsController::connectionForURL(wi_url_t *url) {
     }
     return NULL;
 }
+
+
+
+
+
+
+#pragma mark -
+
+void DRConnectionsController::userNickDidChange(QString nick) {
+    QListIterator<DRConnection*> it(*this->connections);
+    wi_string_t *wstring = wi_string_with_cstring(nick.toStdString().c_str());
+
+    wi_p7_message_t *message = wi_p7_message_with_name(WI_STR("wired.user.set_nick"), wc_spec);
+    wi_p7_message_set_string_for_name(message, wstring, WI_STR("wired.user.nick"));
+
+    while (it.hasNext()) {
+        DRConnection *connection = it.next();
+        connection->sendMessage(message);
+    }
+}
+
+
+
+void DRConnectionsController::userStatusDidChange(QString status) {
+    QListIterator<DRConnection*> it(*this->connections);
+    wi_string_t *wstring = wi_string_with_cstring(status.toStdString().c_str());
+
+    wi_p7_message_t *message = wi_p7_message_with_name(WI_STR("wired.user.set_status"), wc_spec);
+    wi_p7_message_set_string_for_name(message, wstring, WI_STR("wired.user.status"));
+
+    while (it.hasNext()) {
+        DRConnection *connection = it.next();
+        connection->sendMessage(message);
+    }
+}
+
+
+

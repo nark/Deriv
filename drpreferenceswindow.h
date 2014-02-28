@@ -1,8 +1,34 @@
+/*
+   Copyright 2014, Rafaël Warnault <rw@read-write.fr>
+
+   Clementine is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   Clementine is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with Clementine.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+
 #ifndef DRPREFERENCESWINDOW_H
 #define DRPREFERENCESWINDOW_H
 
 #include <QMainWindow>
 #include <QSettings>
+
+
+
+#define DRDefaultNick                   "DRDefaultNick"
+#define DRDefaultStatus                 "DRDefaultStatus"
+#define DRShowConnectAtStartup          "DRShowConnectAtStartup"
+
 
 
 namespace Ui {
@@ -20,8 +46,14 @@ public:
     void                                show();
     QSettings                           *settings;
 
+signals:
+    void userNickDidChange(QString nick);
+    void userStatusDidChange(QString status);
+
 private slots:
-    void on_nickLabel_editingFinished();
+    void on_nickField_editingFinished();
+    void on_statusField_editingFinished();
+    void on_showConnectAtStartupCheckBox_clicked();
 
 private:
     explicit                            DRPreferencesWindow(QWidget *parent = 0);
@@ -29,6 +61,9 @@ private:
 
 private:
     Ui::DRPreferencesWindow *ui;
+
+    void setDefault();
+    void loadSettings();
 };
 
 #endif // DRPREFERENCESWINDOW_H

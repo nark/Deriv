@@ -30,7 +30,8 @@ SOURCES  += main.cpp\
     drpreferenceswindow.cpp \
     draboutwindow.cpp \
     drdatabasemanager.cpp \
-    drconnectionobject.cpp
+    drconnectionobject.cpp \
+    druseritemdelegate.cpp
 
 HEADERS  += drmainwindow.h \
             config.h \
@@ -48,7 +49,8 @@ HEADERS  += drmainwindow.h \
     drpreferenceswindow.h \
     draboutwindow.h \
     drdatabasemanager.h \
-    drconnectionobject.h
+    drconnectionobject.h \
+    druseritemdelegate.h
 
 FORMS    += drmainwindow.ui \
     drconnectdialog.ui \

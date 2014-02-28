@@ -65,7 +65,7 @@
        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
       </property>
      </widget>
-     <widget class="QLineEdit" name="nickLabel">
+     <widget class="QLineEdit" name="nickField">
       <property name="geometry">
        <rect>
         <x>169</x>
@@ -75,7 +75,7 @@
        </rect>
       </property>
      </widget>
-     <widget class="QLineEdit" name="lineEdit_2">
+     <widget class="QLineEdit" name="statusField">
       <property name="geometry">
        <rect>
         <x>169</x>
@@ -85,7 +85,7 @@
        </rect>
       </property>
      </widget>
-     <widget class="QPushButton" name="pushButton">
+     <widget class="QPushButton" name="userIcon">
       <property name="geometry">
        <rect>
         <x>359</x>
@@ -132,7 +132,7 @@
        <set>Qt::AlignCenter</set>
       </property>
      </widget>
-     <widget class="QCheckBox" name="checkBox">
+     <widget class="QCheckBox" name="showConnectAtStartupCheckBox">
       <property name="geometry">
        <rect>
         <x>169</x>

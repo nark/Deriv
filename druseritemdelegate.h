@@ -17,26 +17,27 @@
 
 
 
-#ifndef DRCONNECTIONCONTROLLER_H
-#define DRCONNECTIONCONTROLLER_H
+#ifndef DRUSERITEMDELEGATE_H
+#define DRUSERITEMDELEGATE_H
 
-#include "drconnection.h"
-#include <QObject>
+#include <QtGui>
+#include <QStyledItemDelegate>
 
 
-class DRConnectionController : public QObject
+class DRUserItemDelegate : public QStyledItemDelegate
 {
-    Q_OBJECT
 public:
-    DRConnectionController(DRConnection* connection, QObject *parent = 0);
-    ~DRConnectionController();
-protected:
-    DRConnection* connection;
+    DRUserItemDelegate();
+    virtual ~DRUserItemDelegate();
 
-signals:
+    enum datarole {headerTextRole = Qt::UserRole + 100,subHeaderTextrole = Qt::UserRole+101,IconRole = Qt::UserRole+102};
 
-public slots:
+    void paint(QPainter *painter, const QStyleOptionViewItem &option,
+           const QModelIndex &index) const;
+
+    QSize sizeHint(const QStyleOptionViewItem &option,
+               const QModelIndex &index ) const;
 
 };
 
-#endif // DRCONNECTIONCONTROLLER_H
+#endif // DRUSERITEMDELEGATE_H

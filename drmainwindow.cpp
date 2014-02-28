@@ -1,3 +1,23 @@
+/*
+    Deriv is a cross-platform client for th Wired 2.0 protocol
+    Copyright (C) 2014  Rafael Warnault, rw@read-write.fr
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+
 #include <QResource>
 #include <QDebug>
 #include <QMessageBox>
@@ -16,6 +36,7 @@
 #include "drchatcontroller.h"
 #include "drpreferenceswindow.h"
 #include "draboutwindow.h"
+#include "druseritemdelegate.h"
 #include "main.h"
 
 
@@ -78,7 +99,7 @@ DRMainWindow::DRMainWindow(QWidget *parent) :
     this->ui->userList->setIconSize(QSize(40,30));
     //Setting the model
     this->ui->userList->setModel(this->usersModel);
-
+    this->ui->userList->setItemDelegate(new DRUserItemDelegate());
 
 
 
@@ -196,10 +217,9 @@ void DRMainWindow::setConnection(DRConnection *connection) {
 
     this->connection = connection;
 
-    qDebug() << "setConnection";
-
     if(connection->connected) {
         this->setWindowTitle(QString(wi_string_cstring(this->connection->server->name)));
+        ui->topicLabel->setText("");
 
         QObject::connect(this->connection, SIGNAL(receivedError(wi_p7_message_t *)), this, SLOT(receivedError(wi_p7_message_t *)));
 
@@ -234,16 +254,6 @@ void DRMainWindow::disconnect() {
     DRConnectionsController::instance()->removeConnection(connection);
 
     connection->disconnect();
-
-    QObject::disconnect(SIGNAL(chatControllerReceivedChatMe(DRConnection *)), this);
-
-//    QObject::disconnect(this, SLOT(chatControllerReceivedChatMe(QString,DRUser*)));
-//    QObject::disconnect(this, SLOT(chatControllerReceivedChatSay(QString,DRUser*)));
-//    QObject::disconnect(this, SLOT(chatControllerTopicChanged(DRTopic*)));
-
-//    QObject::disconnect(this, SLOT(usersControllerUserListLoaded()));
-//    QObject::disconnect(this, SLOT(usersControllerUserJoined(DRUser*)));
-//    QObject::disconnect(this, SLOT(usersControllerUserLeave(DRUser*)));
 
     this->reloadTreeView();
     this->reloadUserList();
@@ -313,8 +323,7 @@ void DRMainWindow::usersControllerUserListLoaded(DRConnection *connection) {
 #pragma mark -
 
 void DRMainWindow::usersControllerUserJoined(DRConnection *connection, DRUser *user) {
-    QString nick = QString(wi_string_cstring(user->nick));
-    QString string = QString("<< ") + nick + QString(" has joined >>");
+    QString string = QString("<< ") + user->nick + QString(" has joined >>");
 
     this->appendChat(string, connection);
 }
@@ -322,8 +331,7 @@ void DRMainWindow::usersControllerUserJoined(DRConnection *connection, DRUser *u
 
 
 void DRMainWindow::usersControllerUserLeave(DRConnection *connection, DRUser *user) {
-    QString nick = QString(wi_string_cstring(user->nick));
-    QString string = QString("<< ") + nick + QString(" has left >>");
+    QString string = QString("<< ") + user->nick + QString(" has left >>");
 
     this->appendChat(string, connection);
 }
@@ -369,15 +377,11 @@ void DRMainWindow::reloadUserList() {
 
          while (i.hasNext()) {
             DRUser *user = i.next();
-
-            const QString base64icon = QString(wi_string_cstring(wi_data_base64(user->icon)));
-
-            QByteArray base64Data = base64icon.toUtf8();
-
-            QImage image;
-            image.loadFromData(QByteArray::fromBase64(base64Data));
-
-            QStandardItem* item = new QStandardItem(QIcon(QPixmap::fromImage(image)), QString(wi_string_cstring(user->nick)));
+            QStandardItem *item = new QStandardItem();
+            item->setData(user->nick, DRUserItemDelegate::headerTextRole);
+            item->setData(user->status, DRUserItemDelegate::subHeaderTextrole);
+            item->setData(user->icon, DRUserItemDelegate::IconRole);
+            item->setEditable(false);
             this->usersModel->appendRow(item);
          }
     }
@@ -399,8 +403,17 @@ void DRMainWindow::reloadChatView() {
         return;
     }
 
-    DRChatController *cc = connection->chatController;
-    ui->chatOutputTextEdit->setPlainText(*cc->chatBuffer);
+    DRChatController *chatController = connection->chatController;
+    ui->chatOutputTextEdit->setPlainText(*chatController->chatBuffer);
+
+    DRTopic *topic = chatController->topic;
+
+    if(topic != NULL) {
+        QString topicString = *topic->topic + QString(" by ") + *topic->nick + QString(" at ") + topic->time->toString();
+        ui->topicLabel->setText(topicString);
+    }
+    else
+        ui->topicLabel->setText("");
 }
 
 
@@ -415,9 +428,8 @@ void DRMainWindow::appendChat(QString string, DRConnection *connection) {
     if(connection == selectedConnection) {
         ui->chatOutputTextEdit->appendPlainText(string);
     }
-    else {
-        connection->chatController->chatBuffer->append(string+"\n");
-    }
+
+    connection->chatController->chatBuffer->append(string+"\n");
 }
 
 
@@ -542,8 +554,6 @@ void DRMainWindow::treeViewSelectionDidChange() {
 
 
 void DRMainWindow::treeViewContextMenu(const QPoint &point) {
-    qDebug() << "treeViewContextMenu";
-
     QStandardItem *item = this->treeModel->itemFromIndex(ui->treeView->indexAt(point));
 
     DRConnectionItem *connectionItem = dynamic_cast<DRConnectionItem*>(item);

@@ -1,3 +1,22 @@
+/*
+    Deriv is a cross-platform client for th Wired 2.0 protocol
+    Copyright (C) 2014  Rafael Warnault, rw@read-write.fr
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
 
 #include "drchatcontroller.h"
 #include "druserscontroller.h"
@@ -68,14 +87,14 @@ void DRChatController::receivedWiredChatSay(wi_p7_message_t *message) {
     if(user == NULL)
         return;
 
-    wi_string_t *string = wi_p7_message_string_for_name(message, WI_STR("wired.chat.say"));
+    wi_string_t *wstring = wi_p7_message_string_for_name(message, WI_STR("wired.chat.say"));
 
-    if(!string || wi_string_length(string) <= 0)
+    if(!wstring || wi_string_length(wstring) <= 0)
         return;
 
-    string = wi_string_with_format(WI_STR("%@ : %@"), user->nick, string);
+    QString qstring = QString("%1 : %2").arg(user->nick, QString(wi_string_cstring(wstring)));
 
-    emit chatControllerReceivedChatSay(this->connection, QString(wi_string_cstring(string)), user);
+    emit chatControllerReceivedChatSay(this->connection, qstring, user);
 }
 
 
@@ -95,14 +114,14 @@ void DRChatController::receivedWiredChatMe(wi_p7_message_t *message) {
     if(user == NULL)
         return;
 
-    wi_string_t *string = wi_p7_message_string_for_name(message, WI_STR("wired.chat.say"));
+    wi_string_t *wstring = wi_p7_message_string_for_name(message, WI_STR("wired.chat.say"));
 
-    if(!string || wi_string_length(string) <= 0)
+    if(!wstring || wi_string_length(wstring) <= 0)
         return;
 
-    string = wi_string_with_format(WI_STR("*** %@ %@"), user->nick, string);
+    QString qstring = QString("*** %1 %2").arg(user->nick, QString(wi_string_cstring(wstring)));
 
-    emit chatControllerReceivedChatMe(this->connection, QString(wi_string_cstring(string)), user);
+    emit chatControllerReceivedChatMe(this->connection, qstring, user);
 }
 
 
