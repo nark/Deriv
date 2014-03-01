@@ -20,6 +20,7 @@
 
 #include <QMutex>
 #include <QSqlQuery>
+#include <QDir>
 #include "drdatabasemanager.h"
 
 

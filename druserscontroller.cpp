@@ -142,7 +142,7 @@ void DRUsersController::receivedWiredUserLeave(wi_p7_message_t *message) {
     if(index < 0)
         return;
 
-    this->users->removeAt(index);
+    this->users->remove(index);
 
     emit usersControllerUserListLoaded(this->connection);
     emit usersControllerUserLeave(this->connection, user);
