@@ -21,7 +21,21 @@
 #ifndef MAIN_H
 #define MAIN_H
 
-#include "config.h"
+#include <QtGlobal>
+
+#ifdef Q_OS_LINUX
+#include "config/linux/config.h"
+#endif
+
+#ifdef Q_OS_MAC
+#include "config/osx/config.h"
+#endif
+
+#ifdef Q_OS_WIN32
+#include "config/win/config.h"
+#endif
+
+
 #include <wired/wired.h>
 
 
