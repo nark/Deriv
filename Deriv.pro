@@ -33,8 +33,8 @@ SOURCES  += main.cpp\
     drconnectionobject.cpp \
     druseritemdelegate.cpp
 
-unix: HEADERS += config/linux/config.h
 macx: HEADERS += config/osx/config.h
+unix: HEADERS += config/linux/config.h
 
 HEADERS  += drmainwindow.h \
     drconnectdialog.h \
@@ -59,11 +59,11 @@ FORMS    += drmainwindow.ui \
     drpreferenceswindow.ui \
     draboutwindow.ui
 
-unix: LIBS += -L$$PWD/libwired/linux/lib/ -lwired -lxml2 -lssl -lcrypto -lsqlite3 -lz
-unix: INCLUDEPATH += libwired/linux/include
-
 macx: LIBS += -L$$PWD/libwired/osx/lib/ -lwired -lxml2 -lssl -lcrypto -lsqlite3 -lz -liconv -framework Carbon
 macx: INCLUDEPATH += libwired/osx/include
+
+unix: LIBS += -L$$PWD/libwired/linux/lib/ -lwired -lxml2 -lssl -lcrypto -lsqlite3 -lz
+unix: INCLUDEPATH += libwired/linux/include
 
 RESOURCES += \
     Resources.qrc
