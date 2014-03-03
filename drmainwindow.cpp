@@ -26,6 +26,7 @@
 #include <QListIterator>
 #include <QString>
 #include <QMutex>
+#include <QProgressBar>
 #include <qtkeychain/keychain.h>
 #include "drmainwindow.h"
 #include "ui_drmainwindow.h"
@@ -37,9 +38,12 @@
 #include "drpreferenceswindow.h"
 #include "draboutwindow.h"
 #include "druseritemdelegate.h"
+#include "dreditconnectionwindow.h"
 #include "main.h"
+#include "dr.h"
 
 
+using namespace QKeychain;
 
 
 static DRMainWindow          *m_Instance = 0;
@@ -77,6 +81,29 @@ void DRMainWindow::drop() {
 
 
 
+void DRMainWindow::startProgress(QString title) {
+    m_Instance->progressBar->setHidden(false);
+
+    if(title != NULL)
+        m_Instance->progressLabel->setText(title);
+    else
+        m_Instance->progressLabel->setText("");
+}
+
+
+
+
+void DRMainWindow::stopProgress(QString title) {
+    m_Instance->progressBar->setHidden(true);
+
+    if(title != NULL)
+        m_Instance->progressLabel->setText(title);
+    else
+        m_Instance->progressLabel->setText("");
+}
+
+
+
 #pragma mark -
 
 DRMainWindow::DRMainWindow(QWidget *parent) :
@@ -97,6 +124,7 @@ DRMainWindow::DRMainWindow(QWidget *parent) :
     this->usersModel = new QStandardItemModel(this);
     //Setting the icon size
     this->ui->userList->setIconSize(QSize(40,30));
+    this->ui->userList->setAlternatingRowColors(true);
     //Setting the model
     this->ui->userList->setModel(this->usersModel);
     this->ui->userList->setItemDelegate(new DRUserItemDelegate());
@@ -106,7 +134,9 @@ DRMainWindow::DRMainWindow(QWidget *parent) :
     ///////////////////////////////////////////////////////
     /* TREE VIEW */
     ///////////////////////////////////////////////////////
+    ui->treeView->setIndentation(8);
     ui->treeView->setSelectionMode(QAbstractItemView::SingleSelection);
+    ui->treeView->setItemDelegate(new DRConnectionItemDelegate());
     ui->treeView->setStyleSheet(
           "background-color: rgb(222, 228, 234);"
           "selection-color: white;"
@@ -118,18 +148,18 @@ DRMainWindow::DRMainWindow(QWidget *parent) :
 
     //defining a couple of items
     this->connectionsNode = new DRConnectionItem("CONNECTIONS", NULL);
-    this->connectionsNode->setIcon(QIcon(":/images/WiredServer-100.png"));
     this->connectionsNode->setSelectable(false);
     this->connectionsNode->setEditable(false);
+    this->connectionsNode->setFont(QFont("Lucida Grande", 11, 500));
+    this->connectionsNode->setForeground(Qt::darkGray);
 
     this->bookmarksNode = new DRConnectionItem("BOOKMARKS", NULL);
-    this->bookmarksNode->setIcon(QIcon(":/images/Bookmarks.tiff"));
     this->bookmarksNode->setSelectable(false);
     this->bookmarksNode->setEditable(false);
 
     //building up the hierarchy
     this->rootNode->appendRow(this->connectionsNode);
-    this->rootNode->appendRow(this->bookmarksNode);
+    //this->rootNode->appendRow(this->bookmarksNode);
 
     //register the model
     ui->treeView->setModel(this->treeModel);
@@ -149,6 +179,13 @@ DRMainWindow::DRMainWindow(QWidget *parent) :
                      this,
                      SLOT(treeViewContextMenu(const QPoint &)));
 
+    QObject::connect(ui->treeView,
+                     SIGNAL(doubleClicked(QModelIndex)),
+                     this,
+                     SLOT(treeViewDoubleClicked(QModelIndex)));
+
+
+
 
 
     ///////////////////////////////////////////////////////
@@ -156,6 +193,29 @@ DRMainWindow::DRMainWindow(QWidget *parent) :
     ///////////////////////////////////////////////////////
     DRConnectionsController *c = DRConnectionsController::instance();
     QObject::connect(c, SIGNAL(connectionAdded(DRConnection*)), this, SLOT(connectionAdded(DRConnection*)));
+
+
+
+
+    ///////////////////////////////////////////////////////
+    /* LOAD CONNECTIONS */
+    ///////////////////////////////////////////////////////
+    this->loadConnections();
+    this->reloadTreeView();
+
+    // add the progress controls
+    this->progressBar = new QProgressBar();
+    this->progressBar->setMaximumWidth(60);
+    this->progressBar->setValue(-1);
+    this->progressBar->setMaximum(0);
+    this->progressBar->setMinimum(0);
+    this->progressBar->setHidden(true);
+
+    this->progressLabel = new QLabel();
+    this->progressLabel->setText("");
+
+    this->ui->statusBar->addWidget(this->progressBar);
+    this->ui->statusBar->addWidget(this->progressLabel);
 }
 
 
@@ -172,6 +232,13 @@ DRMainWindow::~DRMainWindow() {
 
 
 
+
+
+void DRMainWindow::close() {
+   this->saveConnections();
+
+    QMainWindow::close();
+}
 
 
 
@@ -206,13 +273,17 @@ void DRMainWindow::setConnection(DRConnection *connection) {
     if(this->connection != NULL) {
         QObject::disconnect(this->connection, SIGNAL(receivedError(wi_p7_message_t *)), this, SLOT(receivedError(wi_p7_message_t *)));
 
-        QObject::disconnect(this->connection->chatController, SIGNAL(chatControllerReceivedChatMe(DRConnection*,QString,DRUser*)), this, SLOT(chatControllerReceivedChatMe(DRConnection*,QString,DRUser*)));
-        QObject::disconnect(this->connection->chatController, SIGNAL(chatControllerReceivedChatSay(DRConnection*,QString,DRUser*)), this, SLOT(chatControllerReceivedChatSay(DRConnection*,QString,DRUser*)));
-        QObject::disconnect(this->connection->chatController, SIGNAL(chatControllerTopicChanged(DRConnection*,DRTopic*)), this, SLOT(chatControllerTopicChanged(DRConnection*,DRTopic*)));
+        if(this->connection->chatController != NULL) {
+            QObject::disconnect(this->connection->chatController, SIGNAL(chatControllerReceivedChatMe(DRConnection*,QString,DRUser*)), this, SLOT(chatControllerReceivedChatMe(DRConnection*,QString,DRUser*)));
+            QObject::disconnect(this->connection->chatController, SIGNAL(chatControllerReceivedChatSay(DRConnection*,QString,DRUser*)), this, SLOT(chatControllerReceivedChatSay(DRConnection*,QString,DRUser*)));
+            QObject::disconnect(this->connection->chatController, SIGNAL(chatControllerTopicChanged(DRConnection*,DRTopic*)), this, SLOT(chatControllerTopicChanged(DRConnection*,DRTopic*)));
+        }
 
-        QObject::disconnect(this->connection->usersController, SIGNAL(usersControllerUserListLoaded(DRConnection *)), this, SLOT(usersControllerUserListLoaded(DRConnection *)));
-        QObject::disconnect(this->connection->usersController, SIGNAL(usersControllerUserJoined(DRConnection *, DRUser*)), this, SLOT(usersControllerUserJoined(DRConnection *, DRUser*)));
-        QObject::disconnect(this->connection->usersController, SIGNAL(usersControllerUserLeave(DRConnection *, DRUser*)), this, SLOT(usersControllerUserLeave(DRConnection *, DRUser*)));
+        if(this->connection->usersController != NULL) {
+            QObject::disconnect(this->connection->usersController, SIGNAL(usersControllerUserListLoaded(DRConnection *)), this, SLOT(usersControllerUserListLoaded(DRConnection *)));
+            QObject::disconnect(this->connection->usersController, SIGNAL(usersControllerUserJoined(DRConnection *, DRUser*)), this, SLOT(usersControllerUserJoined(DRConnection *, DRUser*)));
+            QObject::disconnect(this->connection->usersController, SIGNAL(usersControllerUserLeave(DRConnection *, DRUser*)), this, SLOT(usersControllerUserLeave(DRConnection *, DRUser*)));
+        }
     }
 
     this->connection = connection;
@@ -251,9 +322,8 @@ void DRMainWindow::disconnect() {
     if(connection == NULL)
         return;
 
-    DRConnectionsController::instance()->removeConnection(connection);
-
-    connection->disconnect();
+    if(connection->connected)
+        connection->disconnect();
 
     this->reloadTreeView();
     this->reloadUserList();
@@ -262,6 +332,46 @@ void DRMainWindow::disconnect() {
     ui->topicLabel->setText("");
 }
 
+
+
+
+void DRMainWindow::removeConnection() {
+    DRConnection *connection = NULL;
+
+    connection = this->selectedConnection();
+
+    if(connection == NULL)
+        return;
+
+    if(connection->connected)
+        connection->disconnect();
+
+    DRConnectionsController::instance()->removeConnection(connection);
+
+    this->saveConnections();
+
+    this->reloadTreeView();
+    this->reloadUserList();
+
+    ui->chatOutputTextEdit->clear();
+    ui->topicLabel->setText("");
+}
+
+
+
+
+void DRMainWindow::editConnection() {
+    DRConnection *connection = NULL;
+
+    connection = this->selectedConnection();
+
+    if(connection == NULL)
+        return;
+
+    DREditConnectionWindow *editConnectionWindow = new DREditConnectionWindow();
+    editConnectionWindow->setConnection(connection);
+    editConnectionWindow->show();
+}
 
 
 
@@ -352,8 +462,19 @@ void DRMainWindow::reloadTreeView() {
 
     while(it.hasNext()) {
         DRConnection *connection = it.next();
-        DRConnectionItem *item = new DRConnectionItem(QString(wi_string_cstring(connection->server->name)), connection);
+        DRConnectionItem *item = NULL;
 
+        if(!connection->serverName.isNull()) {
+            item = new DRConnectionItem(connection->serverName, connection);
+        } else {
+            item = new DRConnectionItem(connection->URLIdentifier(), connection);
+        }
+        if(connection->connected) {
+            item->setIcon(QIcon(":/images/user-icon.png"));
+        } else {
+            item->setIcon(QIcon(":/images/WiredServer-100.png"));
+        }
+        item->setEditable(false);
         this->connectionsNode->appendRow(item);
     }
 
@@ -404,16 +525,19 @@ void DRMainWindow::reloadChatView() {
     }
 
     DRChatController *chatController = connection->chatController;
-    ui->chatOutputTextEdit->setPlainText(*chatController->chatBuffer);
 
-    DRTopic *topic = chatController->topic;
+    if(connection->connected) {
+        ui->chatOutputTextEdit->setPlainText(*chatController->chatBuffer);
 
-    if(topic != NULL) {
-        QString topicString = *topic->topic + QString(" by ") + *topic->nick + QString(" at ") + topic->time->toString();
-        ui->topicLabel->setText(topicString);
+        DRTopic *topic = chatController->topic;
+
+        if(topic != NULL) {
+            QString topicString = *topic->topic + QString(" by ") + *topic->nick + QString(" at ") + topic->time->toString();
+            ui->topicLabel->setText(topicString);
+        }
+        else
+            ui->topicLabel->setText("");
     }
-    else
-        ui->topicLabel->setText("");
 }
 
 
@@ -437,26 +561,6 @@ void DRMainWindow::appendChat(QString string, DRConnection *connection) {
 
 
 
-wi_data_t *DRMainWindow::getBase64DefaultUserIcon() {
-    QResource resource("/images/user-icon.png");
-
-    QFile* file = new QFile((resource.absoluteFilePath()));
-
-    file->open(QIODevice::ReadOnly);
-
-    const QByteArray image = file->readAll();
-
-    wi_data_t *data = wi_data_with_bytes(image.constData(), image.size()+1);
-
-    file->close();
-
-    if(data == NULL || wi_data_length(data) <= 0)
-        return NULL;
-
-    return data;
-}
-
-
 
 
 DRConnection* DRMainWindow::selectedConnection() {
@@ -469,17 +573,17 @@ DRConnection* DRMainWindow::selectedConnection() {
     if(ui->treeView->selectionModel()->selectedIndexes().length() <= 0)
         return NULL;
 
-    itemIndex   = ui->treeView->selectionModel()->selectedIndexes()[0];
+    itemIndex = ui->treeView->selectionModel()->selectedIndexes()[0];
 
     if(itemIndex.row() == -1)
         return NULL;
 
-    item        = (DRConnectionItem *)this->treeModel->itemFromIndex(itemIndex);
+    item = (DRConnectionItem *)this->treeModel->itemFromIndex(itemIndex);
 
     if(item == NULL)
         return NULL;
 
-    connection  = item->connection;
+    connection = item->connection;
 
     return connection;
 }
@@ -514,6 +618,47 @@ bool DRMainWindow::hasItemForConnection(DRConnection *connection) {
     return false;
 }
 
+
+
+
+void DRMainWindow::connectSucceeded(DRConnection *connection) {
+    DRMainWindow::stopProgress(NULL);
+
+    DRConnectionsController::instance()->addConnection(this->connection);
+
+    this->reloadTreeView();
+    this->reloadChatView();
+    this->reloadUserList();
+
+    DRConnectionItem *item = this->itemForConnection(connection);
+
+    if(item == NULL)
+        return;
+
+    QModelIndex itemIndex = this->treeModel->indexFromItem(item);
+
+    if(itemIndex.row() == -1)
+        return;
+
+    ui->treeView->selectionModel()->select(itemIndex, QItemSelectionModel::Select);
+
+    this->saveConnections();
+}
+
+
+
+void DRMainWindow::connectError(DRConnection *connection, QString error) {
+    DRMainWindow::stopProgress(NULL);
+
+    QMessageBox msgBox;
+
+    msgBox.setText("Connection Error");
+    msgBox.setInformativeText(error);
+    msgBox.setStandardButtons(QMessageBox::Ok);
+    msgBox.setDefaultButton(QMessageBox::Ok);
+
+    msgBox.exec();
+}
 
 
 
@@ -553,6 +698,26 @@ void DRMainWindow::treeViewSelectionDidChange() {
 
 
 
+
+
+void DRMainWindow::treeViewDoubleClicked(QModelIndex index) {
+    DRConnection *connection;
+
+    connection = this->selectedConnection();
+
+    if(connection == NULL)
+        return;
+
+    if(connection->connected == false && connection->connecting == false) {
+        DRMainWindow::startProgress(QString("Connecting to %1").arg(connection->URLIdentifier()));
+
+        connection->connect(this);
+    }
+}
+
+
+
+
 void DRMainWindow::treeViewContextMenu(const QPoint &point) {
     QStandardItem *item = this->treeModel->itemFromIndex(ui->treeView->indexAt(point));
 
@@ -562,8 +727,12 @@ void DRMainWindow::treeViewContextMenu(const QPoint &point) {
         if (dynamic_cast<DRConnectionItem*>(item)) {
             QMenu *menu = new QMenu;
 
-            if(connectionItem->connection->connected)
+            if(connectionItem->connection->connected) {
                  menu->addAction(QString("Disconnect"), this, SLOT(disconnect()));
+                 menu->addSeparator();
+            }
+            menu->addAction(QString("Edit"), this, SLOT(editConnection()));
+            menu->addAction(QString("Remove"), this, SLOT(removeConnection()));
 
             menu->exec(QCursor::pos());
         }
@@ -581,7 +750,62 @@ void DRMainWindow::connectionAdded(DRConnection* connection) {
         return;
 
     QModelIndex itemIndex = this->treeModel->indexFromItem(item);
+
+    if(itemIndex.row() == -1)
+        return;
+
     ui->treeView->selectionModel()->select(itemIndex, QItemSelectionModel::Select);
+
+    this->saveConnections();
+}
+
+
+
+
+
+void DRMainWindow::loadConnections() {
+    QList<QString> connectionIdentifiers;
+    QList<QString> connectionNames;
+    int size = DRPreferencesWindow::instance()->settings->beginReadArray(DRConnectionIdentifiers);
+
+    for(int i=0; i < size; i++) {
+        DRPreferencesWindow::instance()->settings->setArrayIndex(i);
+        connectionIdentifiers.push_front(DRPreferencesWindow::instance()->settings->value("identifier").toString());
+        connectionNames.push_front(DRPreferencesWindow::instance()->settings->value("name").toString());
+    }
+
+    DRPreferencesWindow::instance()->settings->endArray();
+
+    for(int i = 0; i < connectionIdentifiers.length(); i++) {
+        QString identifier = connectionIdentifiers.at(i);
+        QString name = connectionNames.at(i);
+
+        QString urlString = QString("wiredp7://") + identifier;
+        wi_url_t *url = wi_url_with_string(wi_string_with_cstring(urlString.toStdString().c_str()));
+
+        DRConnection *newConnection = new DRConnection(url);
+        newConnection->serverName = name;
+        DRConnectionsController::instance()->addConnection(newConnection);
+    }
+}
+
+
+
+
+void DRMainWindow::saveConnections() {
+    DRPreferencesWindow::instance()->settings->remove(DRConnectionIdentifiers);
+
+    DRPreferencesWindow::instance()->settings->beginWriteArray(DRConnectionIdentifiers);
+
+    for(int i = 0; i< DRConnectionsController::instance()->connections->length(); i++){
+        DRConnection *connection = DRConnectionsController::instance()->connectionAtIndex(i);
+        DRPreferencesWindow::instance()->settings->setArrayIndex(i);
+        DRPreferencesWindow::instance()->settings->setValue("identifier", connection->URLIdentifier());
+        DRPreferencesWindow::instance()->settings->setValue("name", connection->serverName);
+    }
+
+    DRPreferencesWindow::instance()->settings->endArray();
+    DRPreferencesWindow::instance()->settings->sync();
 }
 
 

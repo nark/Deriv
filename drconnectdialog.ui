@@ -140,40 +140,6 @@
     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
    </property>
   </widget>
-  <widget class="QProgressBar" name="progressBar">
-   <property name="enabled">
-    <bool>true</bool>
-   </property>
-   <property name="geometry">
-    <rect>
-     <x>20</x>
-     <y>140</y>
-     <width>41</width>
-     <height>20</height>
-    </rect>
-   </property>
-   <property name="sizePolicy">
-    <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
-     <horstretch>0</horstretch>
-     <verstretch>0</verstretch>
-    </sizepolicy>
-   </property>
-   <property name="maximum">
-    <number>0</number>
-   </property>
-   <property name="value">
-    <number>-1</number>
-   </property>
-   <property name="orientation">
-    <enum>Qt::Horizontal</enum>
-   </property>
-   <property name="invertedAppearance">
-    <bool>false</bool>
-   </property>
-   <property name="textDirection">
-    <enum>QProgressBar::TopToBottom</enum>
-   </property>
-  </widget>
  </widget>
  <resources/>
  <connections>

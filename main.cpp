@@ -67,8 +67,8 @@ int main(int argc, char *argv[])
 
     DRMainWindow::instance()->show();
 
-    if(DRPreferencesWindow::instance()->settings->value(DRShowConnectAtStartup).toBool())
-        DRMainWindow::instance()->on_actionNewConnection_triggered();
+//    if(DRPreferencesWindow::instance()->settings->value(DRShowConnectAtStartup).toBool())
+//        DRMainWindow::instance()->on_actionNewConnection_triggered();
 
     int result = a.exec();
 

@@ -27,6 +27,7 @@
 #include "druserscontroller.h"
 #include "drpreferenceswindow.h"
 #include "main.h"
+#include "dr.h"
 
 
 #pragma mark -
@@ -37,10 +38,12 @@ DRConnection::DRConnection(wi_url_t *url, QObject *parent) :
     this->url = (wi_url_t *)wi_retain(url);
 
     this->server = NULL;
+    this->serverName = (const char *)0;
     this->chatController = NULL;
     this->usersController = NULL;
 
     this->connected = false;
+    this->connecting = false;
 }
 
 
@@ -70,50 +73,138 @@ QString DRConnection::URLIdentifier() {
     identifier += QString(wi_string_cstring(wi_url_user(this->url)));
     identifier += QString("@");
     identifier += QString(wi_string_cstring(wi_url_host(this->url)));
-
-    qDebug() << identifier;
+    identifier += QString(":");
+    identifier += QString(wi_string_cstring(wi_string_with_format(WI_STR("%d"), wi_url_port(this->url))));
 
     return identifier;
 }
+
+
+QString DRConnection::URLPassword() {
+    wi_string_t     *string = NULL;
+    QString         password = "";
+
+    string = wi_url_password(this->url);
+
+    if(string != NULL)
+        password += QString(wi_string_cstring(string));
+
+    return password;
+}
+
+
+
+
+
 
 
 
 
 #pragma mark -
 
-void DRConnection::connect() {
+void DRConnection::connect(QObject *receiver) {
+    QThread* thread = new QThread;
+
+    wi_mutable_url_t    *mutable_url;
+
+    mutable_url = (wi_mutable_url_t *)wi_mutable_copy(this->url);
+
+    // enforce default Wired 2.0 port (4871)
+    if(!wi_url_port(this->url))
+        wi_mutable_url_set_port(mutable_url, 4871);
+
+    // enforce default user
+    if(!wi_url_user(this->url))
+        wi_mutable_url_set_user(mutable_url, WI_STR("guest"));
+
+    // enforce password from keychain
+    if(!wi_url_password(this->url)) {
+        QString password = DR::loadPasswordForULRIdentifier(this->URLIdentifier());
+        if(password.length() > 0) {
+            wi_mutable_url_set_password(mutable_url, wi_string_with_cstring(password.toStdString().c_str()));
+        }
+    }
+
+    this->url = mutable_url;
+
+    qDebug() << wi_url_password(this->url);
+
+    this->connecting = true;
+
+    // move the connection object to a background thread
+    this->moveToThread(thread);
+
+    // connect the started() thread signal to the connection thread slot
+    QObject::connect(thread, SIGNAL(started()), this, SLOT(connectThread()));
+
+    // connect receiver signals
+    QObject::connect(this, SIGNAL(connectSucceeded(DRConnection*)), receiver, SLOT(connectSucceeded(DRConnection*)));
+    QObject::connect(this, SIGNAL(connectError(DRConnection*,QString)), receiver, SLOT(connectError(DRConnection*,QString)));
+
+    // start connection in background
+    thread->start();
+}
+
+
+
+
+void DRConnection::connectThread() {
     wi_pool_t           *pool;
 
+    // make libwired enter the connection thread
     wi_thread_enter_thread();
 
+    // init a libwired memeory pool for this thread
     pool = wi_pool_init(wi_pool_alloc());
 
+    // try to connect
     this->p7_socket = (wi_p7_socket_t *)wi_retain(wc_connect(this->url));
 
+    // check connection OK
     if(!this->p7_socket) {
+        this->connecting = false;
         QString errorString = QString("Cannot connect to ") + QString(wi_string_cstring(wi_url_host(this->url)));
-        emit connectError(errorString);
+        // if error, back to main thread
+        this->moveToThread(QApplication::instance()->thread());
+        // notify receiver
+        emit connectError(this, errorString);
         return;
     }
 
+    // try to login
     if(!wc_login(this->p7_socket, this->url)) {
-        emit connectError(QString("Could not login"));
+        this->connecting = false;
+        // if error, back to main thread
+        this->moveToThread(QApplication::instance()->thread());
+        // notify receiver
+        emit connectError(this, QString("Could not login"));
         return;
     }
 
+    // init sub controllers
     this->chatController = new DRChatController(this);
     this->usersController = new DRUsersController(this);
 
+    // send user infos
     this->sendUserInfo();
+    // join public chat
     this->joinPublicChat();
+
+    // we are now connected
+    this->connecting = false;
     this->connected = true;
 
+    // move back the connection to the main thread
     this->moveToThread(QApplication::instance()->thread());
-    emit connectSucceeded();
+    emit connectSucceeded(this);
+
+    // start the receive message loop
     this->receiveMessagesLoop();
 
+    // release the curent libwired pool
     wi_release(pool);
 
+    // make libwired exit this thread
     wi_thread_exit_thread();
 }
 
@@ -211,7 +302,7 @@ void DRConnection::sendMessage(wi_p7_message_t *message) {
      wi_p7_message_set_string_for_name(message, WI_STR(string.toStdString().c_str()), WI_STR("wired.user.status"));
      this->sendMessage(message);
 
-     icon    = DRMainWindow::getBase64DefaultUserIcon();
+     icon = DR::getDefaultBase64UserIcon();
      message = wi_p7_message_with_name(WI_STR("wired.user.set_icon"), wc_spec);
      wi_p7_message_set_data_for_name(message, icon, WI_STR("wired.user.icon"));
      this->sendMessage(message);
@@ -352,6 +443,8 @@ wi_boolean_t DRConnection::wc_login(wi_p7_socket_t *socket, wi_url_t *url) {
         this->server->banner = banner;
 
         wi_log_info(WI_STR("Connected to \"%@\""), wi_p7_message_string_for_name(message, WI_STR("wired.info.name")));
+
+        this->serverName = QString(wi_string_cstring(this->server->name));
     }
 
     wi_log_info(WI_STR("Logging in as \"%@\"..."), wi_url_user(url));

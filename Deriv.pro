@@ -29,9 +29,10 @@ SOURCES  += main.cpp\
     drtopic.cpp \
     drpreferenceswindow.cpp \
     draboutwindow.cpp \
-    drdatabasemanager.cpp \
     drconnectionobject.cpp \
-    druseritemdelegate.cpp
+    druseritemdelegate.cpp \
+    dr.cpp \
+    dreditconnectionwindow.cpp
 
 macx: HEADERS += config/osx/config.h
 unix: HEADERS += config/linux/config.h
@@ -50,20 +51,24 @@ HEADERS  += drmainwindow.h \
     drtopic.h \
     drpreferenceswindow.h \
     draboutwindow.h \
-    drdatabasemanager.h \
     drconnectionobject.h \
-    druseritemdelegate.h
+    druseritemdelegate.h \
+    dr.h \
+    dreditconnectionwindow.h
 
 FORMS    += drmainwindow.ui \
     drconnectdialog.ui \
     drpreferenceswindow.ui \
-    draboutwindow.ui
+    draboutwindow.ui \
+    dreditconnectionwindow.ui
 
-macx: LIBS += -L$$PWD/libwired/osx/lib/ -lwired -lxml2 -lssl -lcrypto -lsqlite3 -lz -liconv -framework Carbon
+macx: LIBS += -L$$PWD/libwired/osx/lib/ -L$$PWD/qtkeychain-build -lwired -lxml2 -lssl -lcrypto -lsqlite3 -lz -liconv -lqt5keychain -framework Carbon
 macx: INCLUDEPATH += libwired/osx/include
+macx: INCLUDEPATH += qtkeychain-build
 
-unix: LIBS += -L$$PWD/libwired/linux/lib/ -lwired -lxml2 -lssl -lcrypto -lsqlite3 -lz
+unix: LIBS += -L$$PWD/libwired/linux/lib/ -L$$PWD/qtkeychain-build -lwired -lxml2 -lssl -lcrypto -lsqlite3 -lz -lqt5keychain
 unix: INCLUDEPATH += libwired/linux/include
+unix: INCLUDEPATH += qtkeychain-build
 
 RESOURCES += \
     Resources.qrc

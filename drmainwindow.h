@@ -26,8 +26,8 @@
 #include <QItemDelegate>
 #include <QApplication>
 #include <QDebug>
-#include <QLineEdit>
-#include <QPainter>
+#include <QProgressBar>
+#include <QLabel>
 #include <wired/wired.h>
 
 #include "drconnection.h"
@@ -46,19 +46,27 @@ class DRMainWindow : public QMainWindow
     Q_OBJECT
 
 public:
+    explicit                DRMainWindow(QWidget *parent = 0);
+
     static DRMainWindow*    instance(QWidget* parent = 0);
     static void             drop();
-    static wi_data_t*       getBase64DefaultUserIcon();
 
-    explicit                DRMainWindow(DRConnection *connection, QWidget *parent = 0);
-    explicit                DRMainWindow(QWidget *parent = 0);
+    static void             startProgress(QString title);
+    static void             stopProgress(QString title);
     ~DRMainWindow();
+
+    void                    close();
 
     void                    selectConnection(DRConnection *connection);
     void                    setConnection(DRConnection *connection);
 
 public slots:
     void                    disconnect();
+    void                    removeConnection();
+    void                    editConnection();
+
+    void                    connectSucceeded(DRConnection *connection);
+    void                    connectError(DRConnection *connection, QString error);
 
     void                    receivedError(wi_p7_message_t *message);
     void                    on_actionNewConnection_triggered();
@@ -66,6 +74,7 @@ public slots:
 
 private slots:
     void                    treeViewSelectionDidChange();
+    void                    treeViewDoubleClicked(QModelIndex index);
     void                    treeViewContextMenu(const QPoint &point);
 
     void                    connectionAdded(DRConnection* connection);
@@ -96,10 +105,15 @@ private:
     DRConnectionItem        *bonjoursNode;
 
     QStandardItemModel      *usersModel;
+    QProgressBar            *progressBar;
+    QLabel                  *progressLabel;
 
     void                    reloadTreeView();
     void                    reloadUserList();
     void                    reloadChatView();
+
+    void                    loadConnections();
+    void                    saveConnections();
 
     void                    appendChat(QString string, DRConnection *connection);
 
@@ -109,6 +123,19 @@ private:
 };
 
 
+
+
+
+class DRConnectionItemDelegate : public QItemDelegate
+{
+public:
+  DRConnectionItemDelegate()
+  {}
+  QSize sizeHint ( const QStyleOptionViewItem & option, const QModelIndex & index ) const
+  {
+    return QSize(option.rect.size().width(), 22);
+  }
+};
 
 
 #endif // DRMAINWINDOW_H

@@ -20,11 +20,14 @@
 
 
 #include <QMutex>
+#include <QHash>
+#include <QList>
 #include <QSettings>
 #include <QDebug>
 
 #include "drpreferenceswindow.h"
 #include "ui_drpreferenceswindow.h"
+#include "drconnection.h"
 
 
 

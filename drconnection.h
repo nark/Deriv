@@ -46,24 +46,28 @@ public:
     DRChatController            *chatController;
     DRUsersController           *usersController;
 
+    QString                     serverName;
     bool                        connected;
+    bool                        connecting;
 
     explicit                    DRConnection(wi_url_t *url, QObject *parent = 0);
     ~DRConnection();
 
     QString                     URLIdentifier();
+    QString                     URLPassword();
 
 public slots:
-    void                        connect();
+    void                        connect(QObject *receiver);
     void                        disconnect();
+
     void                        sendMessage(wi_p7_message_t *message);
 
     void                        sendUserInfo();
     void                        joinPublicChat();
 
 signals:
-    void                        connectSucceeded();
-    void                        connectError(QString err);
+    void                        connectSucceeded(DRConnection *connection);
+    void                        connectError(DRConnection *connection, QString err);
     void                        connectionClosed(DRConnection *connection);
 
     void                        receivedMessage(wi_p7_message_t *message);
@@ -71,6 +75,7 @@ signals:
 
 
 private slots:
+    void                        connectThread();
     void                        receiveMessagesLoop();
 
 private:

@@ -16,42 +16,30 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef DRDATABASEMANAGER_H
-#define DRDATABASEMANAGER_H
 
-#include <QObject>
-#include <QSqlDatabase>
-#include <QSqlError>
-#include <QFile>
+#ifndef DREDITCONNECTIONWINDOW_H
+#define DREDITCONNECTIONWINDOW_H
 
-//class DRMessage;
-//class DRPrivateMessage;
-//class DRBroadcastMessage;
-//class DRChatMessage;
-//class DREventMessage;
+#include <QMainWindow>
+#include "drconnection.h"
 
-class DRDatabaseManager : public QObject
-    {
-    public:
-        static DRDatabaseManager* instance(QObject* parent = 0);
-        static void drop();
+namespace Ui {
+class DREditConnectionWindow;
+}
 
-        DRDatabaseManager(QObject *parent = 0);
-        ~DRDatabaseManager();
+class DREditConnectionWindow : public QMainWindow
+{
+    Q_OBJECT
 
-    public:
+public:
+    explicit DREditConnectionWindow(QWidget *parent = 0);
+    ~DREditConnectionWindow();
 
+    void setConnection(DRConnection *connection);
 
-
-        bool openDB();
-        bool deleteDB();
-        QSqlError lastError();
-
-        bool exec(QString sql);
-        bool query(QString sql);
-
-    private:
-        QSqlDatabase db;
+private:
+    Ui::DREditConnectionWindow *ui;
+    DRConnection *connection;
 };
 
-#endif // DRDATABASEMANAGER_H
+#endif // DREDITCONNECTIONWINDOW_H

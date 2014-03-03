@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>833</width>
-    <height>503</height>
+    <height>481</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -39,19 +39,6 @@
     <property name="spacing">
      <number>0</number>
     </property>
-    <item row="0" column="2">
-     <widget class="QListView" name="userList">
-      <property name="maximumSize">
-       <size>
-        <width>250</width>
-        <height>16777215</height>
-       </size>
-      </property>
-      <property name="focusPolicy">
-       <enum>Qt::TabFocus</enum>
-      </property>
-     </widget>
-    </item>
     <item row="0" column="1">
      <layout class="QVBoxLayout" name="verticalLayout">
       <property name="leftMargin">
@@ -187,6 +174,19 @@
       </property>
      </widget>
     </item>
+    <item row="0" column="2">
+     <widget class="QListView" name="userList">
+      <property name="maximumSize">
+       <size>
+        <width>250</width>
+        <height>16777215</height>
+       </size>
+      </property>
+      <property name="focusPolicy">
+       <enum>Qt::TabFocus</enum>
+      </property>
+     </widget>
+    </item>
    </layout>
   </widget>
   <widget class="QMenuBar" name="menuBar">
@@ -203,6 +203,12 @@
      <string>Connections</string>
     </property>
     <addaction name="actionNewConnection"/>
+    <addaction name="actionDisconnect"/>
+    <addaction name="separator"/>
+    <addaction name="actionSetTopic"/>
+    <addaction name="actionBroadcast"/>
+    <addaction name="separator"/>
+    <addaction name="actionClose"/>
     <addaction name="separator"/>
     <addaction name="actionAbout"/>
     <addaction name="actionPreferences"/>
@@ -211,11 +217,20 @@
     <property name="title">
      <string>Bookmarks</string>
     </property>
+    <addaction name="actionBookmark_Connection"/>
    </widget>
    <widget class="QMenu" name="menuView">
     <property name="title">
      <string>View</string>
     </property>
+    <addaction name="actionChat"/>
+    <addaction name="actionBoards_2"/>
+    <addaction name="actionMessages_2"/>
+    <addaction name="actionFiles_2"/>
+    <addaction name="actionTransfers_2"/>
+    <addaction name="actionSettings"/>
+    <addaction name="separator"/>
+    <addaction name="actionToggle_Toolbar"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuView"/>
@@ -326,6 +341,66 @@
    </property>
    <property name="menuRole">
     <enum>QAction::PreferencesRole</enum>
+   </property>
+  </action>
+  <action name="actionDisconnect">
+   <property name="text">
+    <string>Disconnect</string>
+   </property>
+  </action>
+  <action name="actionClose">
+   <property name="text">
+    <string>Close</string>
+   </property>
+  </action>
+  <action name="actionSetTopic">
+   <property name="text">
+    <string>Set Topic...</string>
+   </property>
+  </action>
+  <action name="actionBroadcast">
+   <property name="text">
+    <string>Broadcast...</string>
+   </property>
+  </action>
+  <action name="actionChat">
+   <property name="text">
+    <string>Chat</string>
+   </property>
+  </action>
+  <action name="actionBoards_2">
+   <property name="text">
+    <string>Boards</string>
+   </property>
+  </action>
+  <action name="actionFiles_2">
+   <property name="text">
+    <string>Files</string>
+   </property>
+  </action>
+  <action name="actionMessages_2">
+   <property name="text">
+    <string>Messages</string>
+   </property>
+  </action>
+  <action name="actionSettings">
+   <property name="text">
+    <string>Settings</string>
+   </property>
+  </action>
+  <action name="actionTransfers_2">
+   <property name="text">
+    <string>Transfers</string>
+   </property>
+  </action>
+  <action name="actionToggle_Toolbar">
+   <property name="text">
+    <string>Toggle Toolbar</string>
+   </property>
+  </action>
+  <action name="actionBookmark_Connection">
+   <property name="text">
+    <string>Bookmark Connection</string>
    </property>
   </action>
  </widget>

@@ -24,12 +24,15 @@
 #include <QMainWindow>
 #include <QSettings>
 
+#include "drconnection.h"
+
 
 
 #define DRDefaultNick                   "DRDefaultNick"
 #define DRDefaultStatus                 "DRDefaultStatus"
 #define DRShowConnectAtStartup          "DRShowConnectAtStartup"
 
+#define DRConnectionIdentifiers         "DRConnectionIdentifiers"
 
 
 namespace Ui {
@@ -38,27 +41,33 @@ class DRPreferencesWindow;
 
 class DRPreferencesWindow : public QMainWindow
 {
+
     Q_OBJECT
-
 public:
-    static DRPreferencesWindow*         instance(QWidget* parent = 0);
-    static void                         drop();
+    static DRPreferencesWindow* instance(QWidget* parent = 0);
+    static void drop();
 
-    void                                show();
-    QSettings                           *settings;
+    QSettings *settings;
+
+    void show();
+    //bool saveConnections(DRConnection *);
+
 
 signals:
     void userNickDidChange(QString nick);
     void userStatusDidChange(QString status);
+
 
 private slots:
     void on_nickField_editingFinished();
     void on_statusField_editingFinished();
     void on_showConnectAtStartupCheckBox_clicked();
 
+
 private:
-    explicit                            DRPreferencesWindow(QWidget *parent = 0);
-                                        ~DRPreferencesWindow();
+    explicit DRPreferencesWindow(QWidget *parent = 0);
+    ~DRPreferencesWindow();
+
 
 private:
     Ui::DRPreferencesWindow *ui;

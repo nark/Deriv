@@ -27,7 +27,7 @@
 #include "drmainwindow.h"
 #include "drconnectionscontroller.h"
 #include "main.h"
-
+#include "dr.h"
 
 
 
@@ -40,7 +40,6 @@ DRConnectDialog::DRConnectDialog(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    ui->progressBar->setHidden(true);
 }
 
 
@@ -99,29 +98,30 @@ void DRConnectDialog::accept()
 
     url = wi_url_with_string(url_string);
 
+    DRMainWindow *mainWindow = (DRMainWindow *)this->parent();
+
     this->connection = DRConnectionsController::instance()->connectionForURL(url);
-    ui->progressBar->setHidden(false);
 
-    if(this->connection != NULL) {
-        DRMainWindow *mainWindow = (DRMainWindow *)this->parent();
+    if(this->connection == NULL) {
+        this->connection = new DRConnection(url);
 
-        mainWindow->selectConnection(this->connection);
+        DRConnectionsController::instance()->addConnection(this->connection);
+
+    } else {
+        if(this->connection->connected) {
+            mainWindow->selectConnection(this->connection);
+        }
 
         done(Accepted);
         return;
     }
 
-    wi_log_info(WI_STR("Connecting initial socket..."));
+    DRMainWindow::startProgress(QString("Connecting to %1").arg(this->connection->URLIdentifier()));
+    DR::savePasswordForULRIdentifier(this->connection->URLPassword(), this->connection->URLIdentifier());
 
-    QThread* thread = new QThread;
-    this->connection = new DRConnection(url);
-    this->connection->moveToThread(thread);
+    this->connection->connect(mainWindow);
 
-    connect(this->connection, SIGNAL(connectError(QString)), this, SLOT(connectError(QString)));
-    connect(thread, SIGNAL(started()), this->connection, SLOT(connect()));
-    connect(this->connection, SIGNAL(connectSucceeded()), this, SLOT(connectSucceeded()));
-
-    thread->start();
+    done(Accepted);
 }
 
 
@@ -136,7 +136,6 @@ void DRConnectDialog::connectSucceeded() {
     DRMainWindow *mainWindow = (DRMainWindow *)this->parent();
     mainWindow->show();
 
-    ui->progressBar->setHidden(true);
     done(Accepted);
 }
 
