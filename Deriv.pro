@@ -32,7 +32,8 @@ SOURCES  += main.cpp\
     drconnectionobject.cpp \
     druseritemdelegate.cpp \
     dr.cpp \
-    dreditconnectionwindow.cpp
+    dreditconnectionwindow.cpp \
+    drerror.cpp
 
 macx: HEADERS += config/osx/config.h
 unix: HEADERS += config/linux/config.h
@@ -54,7 +55,8 @@ HEADERS  += drmainwindow.h \
     drconnectionobject.h \
     druseritemdelegate.h \
     dr.h \
-    dreditconnectionwindow.h
+    dreditconnectionwindow.h \
+    drerror.h
 
 FORMS    += drmainwindow.ui \
     drconnectdialog.ui \

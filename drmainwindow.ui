@@ -294,7 +294,7 @@
   <action name="actionMessages">
    <property name="icon">
     <iconset resource="Resources.qrc">
-     <normaloff>:/images/Messages.tiff</normaloff>:/images/Messages.tiff</iconset>
+     <normaloff>:/images/Messages.png</normaloff>:/images/Messages.png</iconset>
    </property>
    <property name="text">
     <string>Messages</string>
@@ -318,7 +318,7 @@
   <action name="actionTransfers">
    <property name="icon">
     <iconset resource="Resources.qrc">
-     <normaloff>:/images/Transfers.tiff</normaloff>:/images/Transfers.tiff</iconset>
+     <normaloff>:/images/Transfers.png</normaloff>:/images/Transfers.png</iconset>
    </property>
    <property name="text">
     <string>Transfers</string>

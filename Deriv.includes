@@ -1,0 +1,5 @@
+.
+config/linux
+config/osx
+libwired/linux/include/wired
+libwired/osx/include/wired

@@ -21,15 +21,21 @@
 #define DR_H
 
 #include <QObject>
+#include <QMainWindow>
 #include <wired/wired.h>
+#include "drerror.h"
 
 
 class DR : public QObject
 {
     Q_OBJECT
 public:
+    static bool         loadSpecification(wi_p7_spec_t **spec, DRError **error);
+    static void         showError(DRError *error, QMainWindow *modalParent = 0);
+
     static QString      loadPasswordForULRIdentifier(QString identifier);
     static bool         savePasswordForULRIdentifier(QString password, QString identifier);
+
     static wi_data_t*   getDefaultBase64UserIcon();
 };
 

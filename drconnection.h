@@ -28,6 +28,7 @@
 
 
 #include "drserver.h"
+#include "drerror.h"
 
 
 class DRChatController;
@@ -49,6 +50,12 @@ public:
     QString                     serverName;
     bool                        connected;
     bool                        connecting;
+    bool                        reconnecting;
+
+    bool                        autoConnect;
+    bool                        autoReconnect;
+
+    QTimer                      *receiveTimer;
 
     explicit                    DRConnection(wi_url_t *url, QObject *parent = 0);
     ~DRConnection();
@@ -65,10 +72,10 @@ public slots:
     void                        sendUserInfo();
     void                        joinPublicChat();
 
-signals:
-    void                        connectSucceeded(DRConnection *connection);
-    void                        connectError(DRConnection *connection, QString err);
-    void                        connectionClosed(DRConnection *connection);
+signals:    
+    void                        connectionSucceeded(DRConnection *connection);
+    void                        connectionError(DRConnection *connection, DRError *error);
+    void                        connectionClosed(DRConnection *connection, DRError *error = NULL);
 
     void                        receivedMessage(wi_p7_message_t *message);
     void                        receivedError(wi_p7_message_t *message);
@@ -76,13 +83,14 @@ signals:
 
 private slots:
     void                        connectThread();
-    void                        receiveMessagesLoop();
+    void                        receiveMessagesLoop(DRError **error);
 
 private:
-    wi_p7_socket_t *			wc_connect(wi_url_t *);
-    wi_boolean_t				wc_login(wi_p7_socket_t *, wi_url_t *);
-    wi_p7_message_t *           wc_write_message_and_read_reply(wi_p7_socket_t *, wi_p7_message_t *, wi_string_t *);
+    wi_p7_socket_t *			connectSocket(DRError **error);
+    wi_boolean_t				login(DRError **error);
 
+    wi_p7_message_t *           writeMessageAndReadReply(wi_p7_message_t *, wi_string_t *);
+    DRError*                    errorWithCode(int code, QString info = 0);
 };
 
 #endif // DRCONNECTION_H

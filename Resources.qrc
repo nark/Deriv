@@ -3,12 +3,12 @@
         <file alias="wired.xml">wired.xml</file>
     </qresource>
     <qresource prefix="/images">
-        <file alias="user-icon.png">WiredClient-64.png</file>
+        <file alias="user-icon.png">WiredClient.png</file>
         <file>Boards.png</file>
-        <file>Messages.tiff</file>
+        <file>Messages.png</file>
         <file>Files.png</file>
-        <file>Transfers.tiff</file>
-        <file>WiredServer-100.png</file>
+        <file>Transfers.png</file>
+        <file>WiredServer.png</file>
         <file>Bookmarks.tiff</file>
     </qresource>
 </RCC>

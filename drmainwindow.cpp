@@ -112,7 +112,7 @@ DRMainWindow::DRMainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
-
+    this->setWindowTitle(QString("Deriv Client"));
 
 
     ///////////////////////////////////////////////////////
@@ -289,7 +289,7 @@ void DRMainWindow::setConnection(DRConnection *connection) {
     this->connection = connection;
 
     if(connection->connected) {
-        this->setWindowTitle(QString(wi_string_cstring(this->connection->server->name)));
+        //this->setWindowTitle(QString(wi_string_cstring(this->connection->server->name)));
         ui->topicLabel->setText("");
 
         QObject::connect(this->connection, SIGNAL(receivedError(wi_p7_message_t *)), this, SLOT(receivedError(wi_p7_message_t *)));
@@ -302,7 +302,7 @@ void DRMainWindow::setConnection(DRConnection *connection) {
         QObject::connect(this->connection->usersController, SIGNAL(usersControllerUserJoined(DRConnection *, DRUser*)), this, SLOT(usersControllerUserJoined(DRConnection *, DRUser*)));
         QObject::connect(this->connection->usersController, SIGNAL(usersControllerUserLeave(DRConnection *, DRUser*)), this, SLOT(usersControllerUserLeave(DRConnection *, DRUser*)));
     } else {
-        this->setWindowTitle(QString("Deriv Client"));
+        //this->setWindowTitle(QString("Deriv Client"));
     }
 }
 
@@ -394,8 +394,6 @@ void DRMainWindow::receivedError(wi_p7_message_t *message) {
 
 
 
-
-
 #pragma mark -
 
 void DRMainWindow::chatControllerReceivedChatSay(DRConnection *connection, QString string, DRUser *user) {
@@ -464,7 +462,7 @@ void DRMainWindow::reloadTreeView() {
         DRConnection *connection = it.next();
         DRConnectionItem *item = NULL;
 
-        if(!connection->serverName.isNull()) {
+        if(!connection->serverName.isNull() && connection->serverName.length() > 0) {
             item = new DRConnectionItem(connection->serverName, connection);
         } else {
             item = new DRConnectionItem(connection->URLIdentifier(), connection);
@@ -472,7 +470,7 @@ void DRMainWindow::reloadTreeView() {
         if(connection->connected) {
             item->setIcon(QIcon(":/images/user-icon.png"));
         } else {
-            item->setIcon(QIcon(":/images/WiredServer-100.png"));
+            item->setIcon(QIcon(":/images/WiredServer.png"));
         }
         item->setEditable(false);
         this->connectionsNode->appendRow(item);
@@ -621,7 +619,7 @@ bool DRMainWindow::hasItemForConnection(DRConnection *connection) {
 
 
 
-void DRMainWindow::connectSucceeded(DRConnection *connection) {
+void DRMainWindow::connectionSucceeded(DRConnection *connection) {
     DRMainWindow::stopProgress(NULL);
 
     DRConnectionsController::instance()->addConnection(this->connection);
@@ -647,17 +645,38 @@ void DRMainWindow::connectSucceeded(DRConnection *connection) {
 
 
 
-void DRMainWindow::connectError(DRConnection *connection, QString error) {
+void DRMainWindow::connectionError(DRConnection *connection, DRError *error) {
     DRMainWindow::stopProgress(NULL);
 
-    QMessageBox msgBox;
+    DR::showError(error, this);
+}
 
-    msgBox.setText("Connection Error");
-    msgBox.setInformativeText(error);
-    msgBox.setStandardButtons(QMessageBox::Ok);
-    msgBox.setDefaultButton(QMessageBox::Ok);
 
-    msgBox.exec();
+
+void DRMainWindow::connectionClosed(DRConnection *connection, DRError *error) {
+    connection->connected = false;
+
+    QObject::disconnect(connection, SIGNAL(receivedError(wi_p7_message_t *)), this, SLOT(receivedError(wi_p7_message_t *)));
+
+    if(connection->chatController != NULL) {
+        QObject::disconnect(connection->chatController, SIGNAL(chatControllerReceivedChatMe(DRConnection*,QString,DRUser*)), this, SLOT(chatControllerReceivedChatMe(DRConnection*,QString,DRUser*)));
+        QObject::disconnect(connection->chatController, SIGNAL(chatControllerReceivedChatSay(DRConnection*,QString,DRUser*)), this, SLOT(chatControllerReceivedChatSay(DRConnection*,QString,DRUser*)));
+        QObject::disconnect(connection->chatController, SIGNAL(chatControllerTopicChanged(DRConnection*,DRTopic*)), this, SLOT(chatControllerTopicChanged(DRConnection*,DRTopic*)));
+    }
+
+    if(connection->usersController != NULL) {
+        QObject::disconnect(connection->usersController, SIGNAL(usersControllerUserListLoaded(DRConnection *)), this, SLOT(usersControllerUserListLoaded(DRConnection *)));
+        QObject::disconnect(connection->usersController, SIGNAL(usersControllerUserJoined(DRConnection *, DRUser*)), this, SLOT(usersControllerUserJoined(DRConnection *, DRUser*)));
+        QObject::disconnect(connection->usersController, SIGNAL(usersControllerUserLeave(DRConnection *, DRUser*)), this, SLOT(usersControllerUserLeave(DRConnection *, DRUser*)));
+    }
+
+    this->reloadTreeView();
+    this->reloadChatView();
+    this->reloadUserList();
+
+    // TODO: only handle certain domains ?
+//    if(error != NULL)
+//        DR::showError(error, this);
 }
 
 

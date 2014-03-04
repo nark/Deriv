@@ -36,15 +36,10 @@ public:
     explicit DRConnectDialog(QWidget *parent = 0);
     ~DRConnectDialog();
 
-public slots:
-    void connectSucceeded();
-    void connectError(QString error);
-
 private:
     void accept();
 
     Ui::DRConnectDialog *ui;
-
     DRConnection *connection;
 };
 

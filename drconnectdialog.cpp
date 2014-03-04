@@ -59,8 +59,6 @@ DRConnectDialog::~DRConnectDialog()
 
 void DRConnectDialog::accept()
 {
-    qDebug() << "Accept";
-
     wi_url_t            *url;
     wi_p7_socket_t		*socket;
     wi_string_t         *url_string;
@@ -69,7 +67,7 @@ void DRConnectDialog::accept()
     address = ui->addressTextField->text();
 
     if(address == NULL || address.length() <= 0) {
-        this->connectError(QString("The address field is madatory."));
+        QApplication::beep();
         return;
     }
 
@@ -111,7 +109,6 @@ void DRConnectDialog::accept()
         if(this->connection->connected) {
             mainWindow->selectConnection(this->connection);
         }
-
         done(Accepted);
         return;
     }
@@ -125,31 +122,5 @@ void DRConnectDialog::accept()
 }
 
 
-
-
-
-#pragma mark -
-
-void DRConnectDialog::connectSucceeded() {
-    DRConnectionsController::instance()->addConnection(this->connection);
-
-    DRMainWindow *mainWindow = (DRMainWindow *)this->parent();
-    mainWindow->show();
-
-    done(Accepted);
-}
-
-
-
-void DRConnectDialog::connectError(QString error) {
-    QMessageBox msgBox;
-
-    msgBox.setText("Connection Error");
-    msgBox.setInformativeText(error);
-    msgBox.setStandardButtons(QMessageBox::Ok);
-    msgBox.setDefaultButton(QMessageBox::Ok);
-
-    msgBox.exec();
-}
 
 

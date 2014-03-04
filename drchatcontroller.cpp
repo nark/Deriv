@@ -31,6 +31,10 @@ DRChatController::DRChatController(DRConnection *connection) :
     this->topic = NULL;
     this->chatBuffer = new QString("");
 
+//    QObject::connect(this->connection, SIGNAL(connectionClosed(DRConnection*,DRError*)),
+//                     this, SLOT(connectionClosed(DRConnection*,DRError*)));
+
+
     QObject::connect(this->connection,  SIGNAL(receivedMessage(wi_p7_message_t*)),
                      this,              SLOT(receivedMessage(wi_p7_message_t*)));
 }
@@ -50,6 +54,16 @@ DRChatController::~DRChatController() {
 
 
 #pragma mark -
+
+void DRChatController::connectionClosed(DRConnection *connection, DRError *error) {
+    QObject::disconnect(this->connection,  SIGNAL(receivedMessage(wi_p7_message_t*)),
+                        this,              SLOT(receivedMessage(wi_p7_message_t*)));
+
+    QObject::disconnect(this->connection, SIGNAL(connectionClosed(DRConnection*,DRError*)),
+                        this, SLOT(connectionClosed(DRConnection*,DRError*)));
+
+}
+
 
 void DRChatController::receivedMessage(wi_p7_message_t *message) {
     if(wi_is_equal(wi_p7_message_name(message), WI_STR("wired.chat.say"))) {

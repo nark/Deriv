@@ -26,6 +26,7 @@
 #include "drconnection.h"
 #include "drtopic.h"
 #include "druser.h"
+#include "drerror.h"
 
 
 class DRChatController : public DRConnectionController
@@ -44,6 +45,7 @@ signals:
     void                chatControllerTopicChanged(DRConnection*, DRTopic *topic);
 
 public slots:
+    void                connectionClosed(DRConnection *connection, DRError *error);
     void                receivedMessage(wi_p7_message_t *message);
 
 private slots:

@@ -20,8 +20,73 @@
 #include <QDebug>
 #include <QResource>
 #include <QFile>
+#include <QMessageBox>
 #include "dr.h"
 #include "qtkeychain/keychain.h"
+
+
+
+/**
+ * Statically load the specification from XML file
+ */
+bool DR::loadSpecification(wi_p7_spec_t **spec, DRError **error) {
+    QHash<DRErrorKeys,QString> errorParams;
+    QResource common("/wired.xml");
+
+    QFile commonFile(common.absoluteFilePath());
+
+    if (!commonFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        errorParams[DRErrorDescriptionKey] = commonFile.fileName();
+        errorParams[DRErrorReasonKey] = commonFile.errorString();
+        *error = new DRError(WIP7SpecLoadFailed, errorParams, DR_ERROR_DOMAIN_WIRED);
+
+        qDebug() << "Unable to open file: " << commonFile.fileName() << " besause of error " << commonFile.errorString() << endl;
+
+        return false;
+    }
+
+    QTextStream in(&commonFile);
+    QString content = in.readAll();
+
+    *spec = wi_p7_spec_init_with_string(wi_p7_spec_alloc(), WI_STR(content.toStdString().c_str()), WI_P7_CLIENT);
+
+    if(!*spec) {
+        errorParams[DRErrorDescriptionKey] = commonFile.fileName();
+        errorParams[DRErrorReasonKey] = QString(wi_string_cstring(wi_error_string()));
+        *error = new DRError(WIP7SpecLoadFailed, errorParams, DR_ERROR_DOMAIN_WIRED);
+
+        wi_log_debug(WI_STR("Could not open wired.xml: %m"));
+
+        return false;
+    }
+
+    // ultimate test to validate message building against the specification
+    wi_p7_spec_message_t *message = wi_p7_spec_message_with_name(*spec, WI_STR("wired.user.info"));
+    if(!message) {
+        wi_log_debug(WI_STR("Invalid spec, could not create message"));
+
+        return false;
+    }
+
+    return true;
+}
+
+
+
+
+
+
+void DR::showError(DRError *error, QMainWindow *modalParent) {
+    QMessageBox msgBox;
+
+    msgBox.setText(error->errorDescription());
+    msgBox.setInformativeText(error->errorReason());
+    msgBox.setStandardButtons(QMessageBox::Ok);
+    msgBox.setDefaultButton(QMessageBox::Ok);
+
+    msgBox.exec();
+}
+
 
 
 

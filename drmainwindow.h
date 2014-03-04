@@ -34,6 +34,7 @@
 #include "drconnectionitem.h"
 #include "druser.h"
 #include "drtopic.h"
+#include "drerror.h"
 
 
 
@@ -65,12 +66,12 @@ public slots:
     void                    removeConnection();
     void                    editConnection();
 
-    void                    connectSucceeded(DRConnection *connection);
-    void                    connectError(DRConnection *connection, QString error);
+    void                    connectionSucceeded(DRConnection *connection);
+    void                    connectionError(DRConnection *connection, DRError* error);
+    void                    connectionClosed(DRConnection *connection, DRError *error);
 
     void                    receivedError(wi_p7_message_t *message);
     void                    on_actionNewConnection_triggered();
-
 
 private slots:
     void                    treeViewSelectionDidChange();
