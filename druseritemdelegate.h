@@ -31,7 +31,12 @@ public:
     DRUserItemDelegate();
     virtual ~DRUserItemDelegate();
 
-    enum datarole {headerTextRole = Qt::UserRole + 100,subHeaderTextrole = Qt::UserRole+101,IconRole = Qt::UserRole+102};
+    enum datarole {
+        headerTextRole      = Qt::UserRole + 100,
+        subHeaderTextrole   = Qt::UserRole + 101,
+        IconRole            = Qt::UserRole + 102,
+        IdleRole            = Qt::UserRole + 103
+    };
 
     void paint(QPainter *painter, const QStyleOptionViewItem &option,
            const QModelIndex &index) const;

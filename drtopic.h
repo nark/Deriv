@@ -23,20 +23,23 @@
 #include <QObject>
 #include <QDateTime>
 #include <wired/wired.h>
+#include "drp7messageobject.h"
 
 
-class DRTopic : public QObject
+class DRTopic : public DRP7MessageObject
 {
     Q_OBJECT
 public:
-    QString             *topic;
-    QString             *nick;
-    QDateTime           *time;
+    QString             topic;
+    QString             nick;
+    QDateTime           time;
 
-    explicit            DRTopic(wi_p7_message_t *message, QObject *parent = 0);
+    explicit            DRTopic(wi_p7_message_t *message);
+    void                setObjectWithMessage(wi_p7_message_t *message);
 
-    void                setTopicWithMessage(wi_p7_message_t *message);
-    QString             qString();
+    QString             formattedTopic();
+    QString             formattedTopicByUser();
+    QString             formattedTopicByUserWithDate();
 };
 
 #endif // DRTOPIC_H

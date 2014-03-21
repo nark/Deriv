@@ -18,6 +18,7 @@
 
 
 
+#include <QDebug>
 #include "drchatcontroller.h"
 #include "druserscontroller.h"
 
@@ -25,7 +26,7 @@
 
 #pragma mark -
 
-DRChatController::DRChatController(DRConnection *connection) :
+DRChatController::DRChatController(DRServerConnection *connection) :
     DRConnectionController(connection)
 {
     this->topic = NULL;
@@ -34,9 +35,12 @@ DRChatController::DRChatController(DRConnection *connection) :
 //    QObject::connect(this->connection, SIGNAL(connectionClosed(DRConnection*,DRError*)),
 //                     this, SLOT(connectionClosed(DRConnection*,DRError*)));
 
+//    QObject::connect(this->connection,  SIGNAL(receivedMessage(wi_p7_message_t*)),
+//                     this,              SLOT(receivedMessage(wi_p7_message_t*)));
 
-    QObject::connect(this->connection,  SIGNAL(receivedMessage(wi_p7_message_t*)),
-                     this,              SLOT(receivedMessage(wi_p7_message_t*)));
+    this->connection->addDelegateForMessage(this, "wired.chat.say");
+    this->connection->addDelegateForMessage(this, "wired.chat.me");
+    this->connection->addDelegateForMessage(this, "wired.chat.topic");
 }
 
 
@@ -50,22 +54,40 @@ DRChatController::~DRChatController() {
 
 
 
+void DRChatController::connectReceiver(QObject *object) {
+    QObject::connect(this, SIGNAL(chatControllerReceivedChatMe(DRServerConnection*,QString,DRUser*)), object, SLOT(chatControllerReceivedChatMe(DRServerConnection*,QString,DRUser*)));
+    QObject::connect(this, SIGNAL(chatControllerReceivedChatSay(DRServerConnection*,QString,DRUser*)), object, SLOT(chatControllerReceivedChatSay(DRServerConnection*,QString,DRUser*)));
+    QObject::connect(this, SIGNAL(chatControllerTopicChanged(DRServerConnection*,DRTopic*,bool)), object, SLOT(chatControllerTopicChanged(DRServerConnection*,DRTopic*,bool)));
+}
+
+
+
+void DRChatController::disconnectReceiver(QObject *object) {
+    QObject::disconnect(this, SIGNAL(chatControllerReceivedChatMe(DRServerConnection*,QString,DRUser*)), object, SLOT(chatControllerReceivedChatMe(DRServerConnection*,QString,DRUser*)));
+    QObject::disconnect(this, SIGNAL(chatControllerReceivedChatSay(DRServerConnection*,QString,DRUser*)), object, SLOT(chatControllerReceivedChatSay(DRServerConnection*,QString,DRUser*)));
+    QObject::disconnect(this, SIGNAL(chatControllerTopicChanged(DRServerConnection*,DRTopic*,bool)), object, SLOT(chatControllerTopicChanged(DRServerConnection*,DRTopic*,bool)));
+}
+
+
 
 
 
 #pragma mark -
 
-void DRChatController::connectionClosed(DRConnection *connection, DRError *error) {
-    QObject::disconnect(this->connection,  SIGNAL(receivedMessage(wi_p7_message_t*)),
-                        this,              SLOT(receivedMessage(wi_p7_message_t*)));
+void DRChatController::connectionSucceeded(DRServerConnection *connection) {
 
-    QObject::disconnect(this->connection, SIGNAL(connectionClosed(DRConnection*,DRError*)),
-                        this, SLOT(connectionClosed(DRConnection*,DRError*)));
+}
+
+void DRChatController::connectionError(DRServerConnection *connection, DRError *error) {
+
+}
+
+void DRChatController::connectionClosed(DRServerConnection *connection, DRError *error) {
 
 }
 
 
-void DRChatController::receivedMessage(wi_p7_message_t *message) {
+void DRChatController::receivedMessage(wi_p7_message_t *message, DRServerConnection *connection) {
     if(wi_is_equal(wi_p7_message_name(message), WI_STR("wired.chat.say"))) {
         this->receivedWiredChatSay(message);
     }
@@ -75,11 +97,12 @@ void DRChatController::receivedMessage(wi_p7_message_t *message) {
     else if(wi_is_equal(wi_p7_message_name(message), WI_STR("wired.chat.topic"))) {
         this->receivedWiredChatTopic(message);
     }
-    else if(wi_is_equal(wi_p7_message_name(message), WI_STR("wired.chat.user_status"))) {
-        this->receivedWiredUserStatus(message);
-    }
+
 }
 
+void DRChatController::receivedError(DRError *error, DRServerConnection *connection) {
+
+}
 
 
 
@@ -128,7 +151,7 @@ void DRChatController::receivedWiredChatMe(wi_p7_message_t *message) {
     if(user == NULL)
         return;
 
-    wi_string_t *wstring = wi_p7_message_string_for_name(message, WI_STR("wired.chat.say"));
+    wi_string_t *wstring = wi_p7_message_string_for_name(message, WI_STR("wired.chat.me"));
 
     if(!wstring || wi_string_length(wstring) <= 0)
         return;
@@ -142,19 +165,15 @@ void DRChatController::receivedWiredChatMe(wi_p7_message_t *message) {
 
 
 void DRChatController::receivedWiredChatTopic(wi_p7_message_t *message) {
-    if(this->topic == NULL)
+    if(this->topic == NULL) {
         this->topic = new DRTopic(message);
-    else
-        this->topic->setTopicWithMessage(message);
-
-    emit chatControllerTopicChanged(this->connection, this->topic);
+        emit chatControllerTopicChanged(this->connection, this->topic, true);
+    } else {
+        this->topic->setObjectWithMessage(message);
+        emit chatControllerTopicChanged(this->connection, this->topic, false);
+    }
 }
 
 
-
-
-void DRChatController::receivedWiredUserStatus(wi_p7_message_t *message) {
-
-}
 
 

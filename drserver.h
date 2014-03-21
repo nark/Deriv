@@ -21,32 +21,39 @@
 #define DRSERVER_H
 
 #include <QObject>
+#include <QIcon>
+#include <QDateTime>
 #include <wired/wired.h>
+#include "drp7messageobject.h"
 
 
 
-class DRServer : public QObject
+class DRServer : public DRP7MessageObject
 {
     Q_OBJECT
 public:
-    wi_string_t *applicationName;
-    wi_string_t *applicationVersion;
-    wi_string_t *applicationBuild;
-    wi_string_t *osName;
-    wi_string_t *osVersion;
-    wi_string_t *arch;
-    wi_boolean_t support_rsrc;
+    QString applicationName;
+    QString applicationVersion;
+    QString applicationBuild;
+    QString osName;
+    QString osVersion;
+    QString arch;
+    QString name;
+    QString description;
+    QIcon banner;
+    bool support_rsrc;
+    int downloads;
+    int uploads;
+    int downloadSpeed;
+    int uploadSpeed;
+    QDateTime startTime;
+    int64_t filesCount;
+    int64_t filesSize;
 
-    wi_string_t *name;
-    wi_string_t *description;
-    wi_data_t   *banner;
+    explicit DRServer(wi_p7_message_t *message);
+    void setObjectWithMessage(wi_p7_message_t *message);
 
-    explicit DRServer(QObject *parent = 0);
-
-signals:
-
-public slots:
-
+    QString versionString();
 };
 
 #endif // DRSERVER_H

@@ -24,6 +24,9 @@
 #include <QObject>
 #include <QThread>
 #include <QTimer>
+#include <QMutex>
+#include <QList>
+#include <QHash>
 #include <wired/wired.h>
 
 
@@ -31,66 +34,125 @@
 #include "drerror.h"
 
 
+
+
+class DRServerConnection;
 class DRChatController;
 class DRUsersController;
+class DRFilesController;
+class DRBoardsController;
 
-class DRConnection : public QObject
+
+
+
+/**
+ * @brief The DRConnectionDelegate interface exposes methods for connection delegates
+ */
+class DRConnectionDelegate
+{
+public:
+    Q_INVOKABLE virtual void connectionSucceeded(DRServerConnection *connection) = 0;
+    Q_INVOKABLE virtual void connectionError(DRServerConnection *connection, DRError *error) = 0;
+    Q_INVOKABLE virtual void connectionClosed(DRServerConnection *connection, DRError *error = NULL) = 0;
+};
+#define DRConnectionDelegate_ID "fr.read-write.DRConnectionDelegate"
+Q_DECLARE_INTERFACE(DRConnectionDelegate, DRConnectionDelegate_ID)
+
+
+
+
+
+
+class DRMessageDelegate
+{
+public:
+    Q_INVOKABLE virtual void receivedMessage(wi_p7_message_t *message, DRServerConnection *connection) = 0;
+    Q_INVOKABLE virtual void receivedError(DRError *error, DRServerConnection *connection) = 0;
+};
+#define DRMessageDelegate_ID "fr.read-write.DRMessageDelegate"
+Q_DECLARE_INTERFACE(DRMessageDelegate, DRMessageDelegate_ID)
+
+
+
+
+
+
+
+
+class DRServerConnection : public QObject
 {
     Q_OBJECT
 public:
-    wi_url_t                    *url;
-    wi_socket_t                 *socket;
-    wi_p7_socket_t              *p7_socket;
-    wi_p7_uint32_t               userID;
+    wi_url_t *url;
+    wi_socket_t *socket;
+    wi_p7_socket_t *p7_socket;
+    wi_p7_uint32_t userID;
 
-    DRServer                    *server;
-    DRChatController            *chatController;
-    DRUsersController           *usersController;
+    DRServer *server;
+    DRChatController *chatController;
+    DRBoardsController *boardsController;
+    DRUsersController *usersController;
+    DRFilesController *filesController;
 
-    QString                     serverName;
-    bool                        connected;
-    bool                        connecting;
-    bool                        reconnecting;
+    QString serverName;
+    bool connected;
+    bool connecting;
+    bool reconnecting;
 
-    bool                        autoConnect;
-    bool                        autoReconnect;
+    bool autoConnect;
+    bool autoReconnect;
 
-    QTimer                      *receiveTimer;
+    QList<DRConnectionDelegate *> connectionsdelegates;
+    QHash<QString, QList<DRMessageDelegate *> > messagesdelegates;
 
-    explicit                    DRConnection(wi_url_t *url, QObject *parent = 0);
-    ~DRConnection();
+    explicit DRServerConnection(wi_url_t *url, QObject *parent = 0);
+    ~DRServerConnection();
 
-    QString                     URLIdentifier();
-    QString                     URLPassword();
+    void setURL(wi_url_t *url);
+    QString URLIdentifier();
+    QString URLPassword();
+    QString URL();
+
+    void addDelegateForConnection(DRConnectionDelegate *delegate);
+    void removeDelegateForConnection(DRConnectionDelegate *delegate);
+
+    void addDelegateForMessage(DRMessageDelegate *delegate, QString message);
+    void removeDelegateForMessage(DRMessageDelegate *delegate, QString message);
 
 public slots:
-    void                        connect(QObject *receiver);
-    void                        disconnect();
+    void connect(QObject *receiver);
+    void disconnect();
 
-    void                        sendMessage(wi_p7_message_t *message);
-
-    void                        sendUserInfo();
-    void                        joinPublicChat();
-
-signals:    
-    void                        connectionSucceeded(DRConnection *connection);
-    void                        connectionError(DRConnection *connection, DRError *error);
-    void                        connectionClosed(DRConnection *connection, DRError *error = NULL);
-
-    void                        receivedMessage(wi_p7_message_t *message);
-    void                        receivedError(wi_p7_message_t *message);
+    bool sendMessage(wi_p7_message_t *message);
+    void sendUserInfo();
+    void joinPublicChat();
 
 
-private slots:
-    void                        connectThread();
-    void                        receiveMessagesLoop(DRError **error);
+protected slots:
+    void initSubControllers();
+    void connectThread();
+    void receiveMessagesThread(DRError **error);
 
 private:
-    wi_p7_socket_t *			connectSocket(DRError **error);
-    wi_boolean_t				login(DRError **error);
+    mutable QMutex delegateMutex;
+    mutable QMutex readMutex;
 
-    wi_p7_message_t *           writeMessageAndReadReply(wi_p7_message_t *, wi_string_t *);
-    DRError*                    errorWithCode(int code, QString info = 0);
+    wi_p7_socket_t * connectSocket(DRError **error);
+    wi_boolean_t login(DRError **error);
+
+    wi_p7_message_t * writeMessageAndReadReply(wi_p7_message_t *, wi_string_t *);
+    DRError* errorWithCode(int code, QString info = 0);
+
+    void notifyDelegatesConnectionSucceeded();
+    void notifyDelegatesConnectionError(DRError *error);
+    void notifyDelegatesConnectionClosed(DRError *error = NULL);
+    void notifyDelegatesReceivedMessage(wi_p7_message_t *message);
+    void notifyDelegatesReceivedError(wi_p7_message_t *message, DRError *error);
 };
+
+
+Q_DECLARE_METATYPE(DRServerConnection*)
+Q_DECLARE_METATYPE(DRError*)
+Q_DECLARE_OPAQUE_POINTER(wi_p7_message_t*)
 
 #endif // DRCONNECTION_H

@@ -60,7 +60,7 @@ void DRConnectionsController::drop() {
 #pragma mark -
 
 DRConnectionsController::DRConnectionsController(QObject* parent) : QObject( parent ) {
-    this->connections = new QList<DRConnection *>();
+    this->connections = new QList<DRServerConnection *>();
 
     QObject::connect(DRPreferencesWindow::instance(), SIGNAL(userNickDidChange(QString)), this, SLOT(userNickDidChange(QString)));
     QObject::connect(DRPreferencesWindow::instance(), SIGNAL(userStatusDidChange(QString)), this, SLOT(userStatusDidChange(QString)));
@@ -72,7 +72,7 @@ DRConnectionsController::DRConnectionsController(QObject* parent) : QObject( par
 
 #pragma mark -
 
-void DRConnectionsController::addConnection(DRConnection *connection) {
+void DRConnectionsController::addConnection(DRServerConnection *connection) {
     if(this->hasConnection(connection))
         return;
 
@@ -83,7 +83,7 @@ void DRConnectionsController::addConnection(DRConnection *connection) {
 
 
 
-void DRConnectionsController::removeConnection(DRConnection *connection) {
+void DRConnectionsController::removeConnection(DRServerConnection *connection) {
     if(!this->hasConnection(connection))
         return;
 
@@ -95,8 +95,8 @@ void DRConnectionsController::removeConnection(DRConnection *connection) {
 
 
 
-bool DRConnectionsController::hasConnection(DRConnection *connection) {
-    DRConnection            *existing;
+bool DRConnectionsController::hasConnection(DRServerConnection *connection) {
+    DRServerConnection            *existing;
     int                     index;
 
     existing    = NULL;
@@ -117,8 +117,8 @@ bool DRConnectionsController::hasConnection(DRConnection *connection) {
 
 #pragma mark -
 
-DRConnection* DRConnectionsController::connectionAtIndex(int index) {
-    DRConnection *connection = NULL;
+DRServerConnection* DRConnectionsController::connectionAtIndex(int index) {
+    DRServerConnection *connection = NULL;
 
     if(index >= 0) {
         connection = this->connections->at(index);
@@ -130,11 +130,11 @@ DRConnection* DRConnectionsController::connectionAtIndex(int index) {
 
 
 
-DRConnection* DRConnectionsController::connectionForIdentifier(QString identifier) {
-    QListIterator<DRConnection*> it(*this->connections);
+DRServerConnection* DRConnectionsController::connectionForIdentifier(QString identifier) {
+    QListIterator<DRServerConnection*> it(*this->connections);
 
     while (it.hasNext()) {
-        DRConnection *connection = it.next();
+        DRServerConnection *connection = it.next();
         if(connection->URLIdentifier() == identifier)
             return connection;
     }
@@ -144,8 +144,8 @@ DRConnection* DRConnectionsController::connectionForIdentifier(QString identifie
 
 
 
-DRConnection* DRConnectionsController::connectionForURL(wi_url_t *url) {
-    QListIterator<DRConnection*> it(*this->connections);
+DRServerConnection* DRConnectionsController::connectionForURL(wi_url_t *url) {
+    QListIterator<DRServerConnection*> it(*this->connections);
     QString identifier = "";
 
     identifier += QString(wi_string_cstring(wi_url_user(url)));
@@ -153,7 +153,7 @@ DRConnection* DRConnectionsController::connectionForURL(wi_url_t *url) {
     identifier += QString(wi_string_cstring(wi_url_host(url)));
 
     while (it.hasNext()) {
-        DRConnection *connection = it.next();
+        DRServerConnection *connection = it.next();
         if(connection->URLIdentifier() == identifier)
             return connection;
     }
@@ -168,14 +168,14 @@ DRConnection* DRConnectionsController::connectionForURL(wi_url_t *url) {
 #pragma mark -
 
 void DRConnectionsController::userNickDidChange(QString nick) {
-    QListIterator<DRConnection*> it(*this->connections);
+    QListIterator<DRServerConnection*> it(*this->connections);
     wi_string_t *wstring = wi_string_with_cstring(nick.toStdString().c_str());
 
     wi_p7_message_t *message = wi_p7_message_with_name(WI_STR("wired.user.set_nick"), wc_spec);
     wi_p7_message_set_string_for_name(message, wstring, WI_STR("wired.user.nick"));
 
     while (it.hasNext()) {
-        DRConnection *connection = it.next();
+        DRServerConnection *connection = it.next();
         connection->sendMessage(message);
     }
 }
@@ -183,14 +183,14 @@ void DRConnectionsController::userNickDidChange(QString nick) {
 
 
 void DRConnectionsController::userStatusDidChange(QString status) {
-    QListIterator<DRConnection*> it(*this->connections);
+    QListIterator<DRServerConnection*> it(*this->connections);
     wi_string_t *wstring = wi_string_with_cstring(status.toStdString().c_str());
 
     wi_p7_message_t *message = wi_p7_message_with_name(WI_STR("wired.user.set_status"), wc_spec);
     wi_p7_message_set_string_for_name(message, wstring, WI_STR("wired.user.status"));
 
     while (it.hasNext()) {
-        DRConnection *connection = it.next();
+        DRServerConnection *connection = it.next();
         connection->sendMessage(message);
     }
 }

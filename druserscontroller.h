@@ -34,19 +34,26 @@ class DRUsersController : public DRConnectionController
 public:
     QVector<DRUser*>        *users;
 
-    explicit                DRUsersController(DRConnection *connection);
+    explicit                DRUsersController(DRServerConnection *connection);
                            ~DRUsersController();
+
+    void                    connectReceiver(QObject *object);
+    void                    disconnectReceiver(QObject *object);
 
     DRUser*                 userAtIndex(int index);
     DRUser*                 userWithID(wi_p7_int32_t userID);
 
 signals:
-    void usersControllerUserListLoaded(DRConnection *);
-    void usersControllerUserJoined(DRConnection *, DRUser *user);
-    void usersControllerUserLeave(DRConnection *, DRUser *user);
+    void usersControllerUserListLoaded(DRServerConnection *);
+    void usersControllerUserJoined(DRServerConnection *, DRUser *user);
+    void usersControllerUserLeave(DRServerConnection *, DRUser *user);
 
 public slots:
-    void receivedMessage(wi_p7_message_t *message);
+    void connectionSucceeded(DRServerConnection *connection);
+    void connectionError(DRServerConnection *connection, DRError *error);
+    void connectionClosed(DRServerConnection *connection, DRError *error = NULL);
+    void receivedMessage(wi_p7_message_t *message, DRServerConnection *connection);
+    void receivedError(DRError *error, DRServerConnection *connection);
 
 private slots:
     void receivedWiredUserList(wi_p7_message_t *message);

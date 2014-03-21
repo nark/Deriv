@@ -17,22 +17,32 @@
 */
 
 
+#ifndef DRSERVERINFODIALOG_H
+#define DRSERVERINFODIALOG_H
 
-#include "drconnectionobject.h"
+#include <QDialog>
+#include "drconnection.h"
 
-#pragma mark -
+namespace Ui {
+class DRServerInfoDialog;
+}
 
-DRConnectionObject::DRConnectionObject(DRConnection *connection, QObject *parent) :
-    QObject(parent)
+class DRServerInfoDialog : public QDialog
 {
-    this->connection = connection;
-}
+    Q_OBJECT
 
+public:
+    explicit DRServerInfoDialog(QWidget *parent = 0);
+    ~DRServerInfoDialog();
 
-DRConnectionObject::~DRConnectionObject() {
+    void setConnection(DRServerConnection *connection);
 
-}
+    void close();
 
+private:
+    Ui::DRServerInfoDialog *ui;
+    DRServerConnection *connection;
 
+};
 
-#pragma mark -
+#endif // DRSERVERINFODIALOG_H

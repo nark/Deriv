@@ -19,26 +19,20 @@
 
 
 #include "druser.h"
+#include "dr.h"
 
-DRUser::DRUser(QObject *parent) :
-    QObject(parent)
-{
+
+DRUser::DRUser(wi_p7_message_t *message) : DRP7MessageObject(message) {
+    if(message != NULL)
+        this->setObjectWithMessage(message);
 }
-
-
-DRUser::DRUser(wi_p7_message_t *message, QObject *parent) :
-    QObject(parent)
-{
-    this->setUserWithMessage(message);
-}
-
 
 
 
 
 #pragma mark -
 
-void DRUser::setUserWithMessage(wi_p7_message_t *message) {
+void DRUser::setObjectWithMessage(wi_p7_message_t *message) {
     if(wi_is_equal(wi_p7_message_name(message), WI_STR("wired.chat.user_list")) ||
        wi_is_equal(wi_p7_message_name(message), WI_STR("wired.chat.user_join")))
     {
@@ -50,7 +44,7 @@ void DRUser::setUserWithMessage(wi_p7_message_t *message) {
         this->status = QString(wi_string_cstring(wi_p7_message_string_for_name(message, WI_STR("wired.user.status"))));
 
         QString base64icon = QString(wi_string_cstring(wi_data_base64(wi_p7_message_data_for_name(message, WI_STR("wired.user.icon")))));
-        this->icon = this->iconForBase64String(base64icon);
+        this->icon = DR::iconForBase64String(base64icon);
     }
     else if(wi_is_equal(wi_p7_message_name(message), WI_STR("wired.chat.user_status")))
     {
@@ -63,14 +57,3 @@ void DRUser::setUserWithMessage(wi_p7_message_t *message) {
 }
 
 
-
-#pragma mark -
-
-QIcon DRUser::iconForBase64String(QString base64) {
-    QByteArray base64Data = base64.toUtf8();
-
-    QImage image;
-    image.loadFromData(QByteArray::fromBase64(base64Data));
-
-    return QIcon(QPixmap::fromImage(image));;
-}

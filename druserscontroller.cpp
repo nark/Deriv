@@ -19,6 +19,7 @@
 
 
 #include <QVector>
+#include <QApplication>
 #include <QDebug>
 #include "druserscontroller.h"
 #include "drpreferenceswindow.h"
@@ -27,17 +28,37 @@
 
 #pragma mark -
 
-DRUsersController::DRUsersController(DRConnection *connection) :
+DRUsersController::DRUsersController(DRServerConnection *connection) :
     DRConnectionController(connection)
 {
     this->users = new QVector<DRUser*>();
 
-    QObject::connect(this->connection, SIGNAL(receivedMessage(wi_p7_message_t*)), this, SLOT(receivedMessage(wi_p7_message_t*)));
+    this->connection->addDelegateForMessage(this, "wired.chat.user_list");
+    this->connection->addDelegateForMessage(this, "wired.chat.user_list.done");
+    this->connection->addDelegateForMessage(this, "wired.chat.user_join");
+    this->connection->addDelegateForMessage(this, "wired.chat.user_leave");
+    this->connection->addDelegateForMessage(this, "wired.chat.user_status");
 }
 
 DRUsersController::~DRUsersController() {
-    delete this->users, this->users = NULL;
+
 }
+
+
+
+void DRUsersController::connectReceiver(QObject *object) {
+    QObject::connect(this, SIGNAL(usersControllerUserListLoaded(DRServerConnection *)), object, SLOT(usersControllerUserListLoaded(DRServerConnection *)));
+    QObject::connect(this, SIGNAL(usersControllerUserJoined(DRServerConnection *, DRUser*)), object, SLOT(usersControllerUserJoined(DRServerConnection *, DRUser*)));
+    QObject::connect(this, SIGNAL(usersControllerUserLeave(DRServerConnection *, DRUser*)), object, SLOT(usersControllerUserLeave(DRServerConnection *, DRUser*)));
+}
+
+
+void DRUsersController::disconnectReceiver(QObject *object) {
+    QObject::disconnect(this, SIGNAL(usersControllerUserListLoaded(DRServerConnection *)), object, SLOT(usersControllerUserListLoaded(DRServerConnection *)));
+    QObject::disconnect(this, SIGNAL(usersControllerUserJoined(DRServerConnection *, DRUser*)), object, SLOT(usersControllerUserJoined(DRServerConnection *, DRUser*)));
+    QObject::disconnect(this, SIGNAL(usersControllerUserLeave(DRServerConnection *, DRUser*)), object, SLOT(usersControllerUserLeave(DRServerConnection *, DRUser*)));
+}
+
 
 
 
@@ -68,8 +89,25 @@ DRUser* DRUsersController::userWithID(wi_p7_int32_t userID) {
 
 #pragma mark -
 
-void DRUsersController::receivedMessage(wi_p7_message_t *message) {
+void DRUsersController::connectionSucceeded(DRServerConnection *connection) {
+
+}
+
+void DRUsersController::connectionError(DRServerConnection *connection, DRError *error) {
+
+}
+
+void DRUsersController::connectionClosed(DRServerConnection *connection, DRError *error) {
+
+}
+
+
+void DRUsersController::receivedMessage(wi_p7_message_t *message, DRServerConnection *connection) {
     qDebug() << wi_string_cstring(wi_p7_message_name(message));
+    if(QThread::currentThread() == QCoreApplication::instance()->thread())
+        qDebug() << "is On Main Thread";
+    else
+        qDebug() << "is Not On Main Thread";
 
     if(wi_is_equal(wi_p7_message_name(message), WI_STR("wired.chat.user_list"))) {
         this->receivedWiredUserList(message);
@@ -89,6 +127,12 @@ void DRUsersController::receivedMessage(wi_p7_message_t *message) {
 }
 
 
+void DRUsersController::receivedError(DRError *error, DRServerConnection *connection) {
+
+}
+
+
+
 
 
 
@@ -100,7 +144,7 @@ void DRUsersController::receivedWiredUserList(wi_p7_message_t *message) {
 
     if(wi_is_equal(wi_p7_message_name(message), WI_STR("wired.chat.user_list"))) {
         user = new DRUser(message);
-        this->users->push_front(user);
+        this->users->push_back(user);
     }
     else if(wi_is_equal(wi_p7_message_name(message), WI_STR("wired.chat.user_list.done"))) {
         emit usersControllerUserListLoaded(this->connection);
@@ -114,7 +158,7 @@ void DRUsersController::receivedWiredUserJoin(wi_p7_message_t *message) {
     DRUser *user;
 
     user = new DRUser(message);
-    this->users->push_front(user);
+    this->users->push_back(user);
 
     emit usersControllerUserJoined(this->connection, user);
     emit usersControllerUserListLoaded(this->connection);
@@ -165,7 +209,7 @@ void DRUsersController::receivedWiredUserStatus(wi_p7_message_t *message) {
     if(user == NULL)
         return;
 
-    user->setUserWithMessage(message);
+    user->setObjectWithMessage(message);
 
     emit usersControllerUserListLoaded(this->connection);
 }

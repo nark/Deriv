@@ -36,23 +36,30 @@ public:
     DRTopic             *topic;
     QString             *chatBuffer;
 
-    explicit            DRChatController(DRConnection* connection);
+    explicit            DRChatController(DRServerConnection* connection);
                         ~DRChatController();
 
+    void                setTopic(DRTopic* topic);
+
+    void                connectReceiver(QObject *object);
+    void                disconnectReceiver(QObject *object);
+
 signals:
-    void                chatControllerReceivedChatSay(DRConnection*, QString string, DRUser *user);
-    void                chatControllerReceivedChatMe(DRConnection*, QString string, DRUser *user);
-    void                chatControllerTopicChanged(DRConnection*, DRTopic *topic);
+    void                chatControllerReceivedChatSay(DRServerConnection*, QString string, DRUser *user);
+    void                chatControllerReceivedChatMe(DRServerConnection*, QString string, DRUser *user);
+    void                chatControllerTopicChanged(DRServerConnection*, DRTopic *topic, bool init);
 
 public slots:
-    void                connectionClosed(DRConnection *connection, DRError *error);
-    void                receivedMessage(wi_p7_message_t *message);
+    void connectionSucceeded(DRServerConnection *connection);
+    void connectionError(DRServerConnection *connection, DRError *error);
+    void connectionClosed(DRServerConnection *connection, DRError *error = NULL);
+    void receivedMessage(wi_p7_message_t *message, DRServerConnection *connection);
+    void receivedError(DRError *error, DRServerConnection *connection);
 
 private slots:
     void                receivedWiredChatSay(wi_p7_message_t *message);
     void                receivedWiredChatMe(wi_p7_message_t *message);
     void                receivedWiredChatTopic(wi_p7_message_t *message);
-    void                receivedWiredUserStatus(wi_p7_message_t *message);
 };
 
 #endif // DRCHATCONTROLLER_H

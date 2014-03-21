@@ -7,9 +7,12 @@
 #CONFIG      -= x86_64
 #CONFIG      += x86
 
-QT          += core gui network sql
+QMAKE_CXXFLAGS_WARN_OFF -= -Wunused-parameter
 
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+QT  += core gui network sql concurrent
+QT  += webkit webkitwidgets
+
+greaterThan(QT_MAJOR_VERSION, 5): QT += widgets
 
 TARGET =    Deriv
 TEMPLATE =  app
@@ -29,11 +32,21 @@ SOURCES  += main.cpp\
     drtopic.cpp \
     drpreferenceswindow.cpp \
     draboutwindow.cpp \
-    drconnectionobject.cpp \
     druseritemdelegate.cpp \
     dr.cpp \
     dreditconnectionwindow.cpp \
-    drerror.cpp
+    drerror.cpp \
+    drserverinfodialog.cpp \
+    drfilescontroller.cpp \
+    drp7messageobject.cpp \
+    drfilestreemodel.cpp \
+    drfileitem.cpp \
+    drboardscontroller.cpp \
+    drthreaditem.cpp \
+    drboarditem.cpp \
+    drboardnodeitem.cpp \
+    drboardstreemodel.cpp \
+    drthreadslistmodel.cpp
 
 macx: HEADERS += config/osx/config.h
 unix: HEADERS += config/linux/config.h
@@ -52,17 +65,28 @@ HEADERS  += drmainwindow.h \
     drtopic.h \
     drpreferenceswindow.h \
     draboutwindow.h \
-    drconnectionobject.h \
     druseritemdelegate.h \
     dr.h \
     dreditconnectionwindow.h \
-    drerror.h
+    drerror.h \
+    drserverinfodialog.h \
+    drfilescontroller.h \
+    drp7messageobject.h \
+    drfilestreemodel.h \
+    drfileitem.h \
+    drboardscontroller.h \
+    drthreaditem.h \
+    drboarditem.h \
+    drboardstreemodel.h \
+    drboardnodeitem.h \
+    drthreadslistmodel.h
 
 FORMS    += drmainwindow.ui \
     drconnectdialog.ui \
     drpreferenceswindow.ui \
     draboutwindow.ui \
-    dreditconnectionwindow.ui
+    dreditconnectionwindow.ui \
+    drserverinfodialog.ui
 
 macx: LIBS += -L$$PWD/libwired/osx/lib/ -L$$PWD/qtkeychain-build -lwired -lxml2 -lssl -lcrypto -lsqlite3 -lz -liconv -lqt5keychain -framework Carbon
 macx: INCLUDEPATH += libwired/osx/include

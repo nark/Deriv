@@ -1,6 +1,7 @@
 <RCC>
     <qresource prefix="/">
         <file alias="wired.xml">wired.xml</file>
+        <file>default.txt</file>
     </qresource>
     <qresource prefix="/images">
         <file alias="user-icon.png">WiredClient.png</file>
@@ -10,5 +11,7 @@
         <file>Transfers.png</file>
         <file>WiredServer.png</file>
         <file>Bookmarks.tiff</file>
+        <file>Chat.png</file>
+        <file>Board.png</file>
     </qresource>
 </RCC>

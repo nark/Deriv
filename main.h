@@ -17,34 +17,33 @@
 */
 
 
-
 #ifndef MAIN_H
 #define MAIN_H
 
 #include <QtGlobal>
 
+
+
+/**
+ * Perform a check over target environment in order to load the proper libwired config header.
+ * NOTE: WIN32 is not supported, yet.
+ */
 #ifdef Q_OS_LINUX
 #include "config/linux/config.h"
 #endif
-
 #ifdef Q_OS_MAC
 #include "config/osx/config.h"
 #endif
-
 #ifdef Q_OS_WIN32
 #include "config/win/config.h"
 #endif
-
-
 #include <wired/wired.h>
 
 
 
 /**
- * A global pointer to the Wired 2.0 specification class of libwired.
+ * @brief wc_spec A global pointer to the Wired 2.0 specification class of libwired.
  */
 extern wi_p7_spec_t *wc_spec;
-
-
 
 #endif // MAIN_H

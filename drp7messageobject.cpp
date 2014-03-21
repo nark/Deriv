@@ -18,23 +18,19 @@
 
 
 
-#ifndef DRCONNECTIONOBJECT_H
-#define DRCONNECTIONOBJECT_H
-
-#include <QObject>
-#include "drconnection.h"
+#include "drp7messageobject.h"
 
 
-class DRConnectionObject : public QObject
+
+DRP7MessageObject::DRP7MessageObject(wi_p7_message_t *message, QObject *parent) :
+    QObject(parent)
 {
-    Q_OBJECT
-public:
-    DRConnection *connection;
-
-    explicit DRConnectionObject(DRConnection *connection, QObject *parent = 0);
-    ~DRConnectionObject();
+    this->message = message;
+}
 
 
-};
 
-#endif // DRCONNECTIONOBJECT_H
+
+void DRP7MessageObject::setObjectWithMessage(wi_p7_message_t *message) {
+
+}

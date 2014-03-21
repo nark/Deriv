@@ -18,6 +18,7 @@
 
 #include "dreditconnectionwindow.h"
 #include "ui_dreditconnectionwindow.h"
+#include "drmainwindow.h"
 #include "dr.h"
 
 
@@ -43,7 +44,7 @@ DREditConnectionWindow::~DREditConnectionWindow()
 
 #pragma mark -
 
-void DREditConnectionWindow::setConnection(DRConnection *connection) {
+void DREditConnectionWindow::setConnection(DRServerConnection *connection) {
     this->connection = connection;
 
     if(this->connection != NULL) {
@@ -64,5 +65,79 @@ void DREditConnectionWindow::setConnection(DRConnection *connection) {
 
         QString password = DR::loadPasswordForULRIdentifier(this->connection->URLIdentifier());
         ui->passwordTextField->setText(password);
+
+        ui->autoConnectCheckBox->setChecked(this->connection->autoConnect);
+        ui->autoReconnectCheckBox->setChecked(this->connection->autoReconnect);
+
     }
+}
+
+
+void DREditConnectionWindow::on_buttonBox_accepted()
+{
+    if(this->isFormValid()) {
+        wi_url_t            *url;
+        wi_string_t         *url_string;
+        QString             address, login, password;
+
+        address = ui->addressTextField->text();
+
+        if(address == NULL || address.length() <= 0) {
+            QApplication::beep();
+            return;
+        }
+
+        if(!address.contains(":"))
+            address = QString("%1:%2").arg(address).arg(4871);
+
+        login = ui->loginTextField->text();
+
+        if(login == NULL || login.length() <= 0)
+            login = "guest";
+
+        password = ui->passwordTextField->text();
+
+        if(password == NULL) {
+            url_string = wi_string_with_format(
+                        WI_STR("wiredp7://%s@%s"),
+                        login.toStdString().c_str(),
+                        address.toStdString().c_str());
+        } else {
+            url_string = wi_string_with_format(
+                        WI_STR("wiredp7://%s:%s@%s"),
+                        login.toStdString().c_str(),
+                        password.toStdString().c_str(),
+                        address.toStdString().c_str());
+        }
+
+        url = wi_url_with_string(url_string);
+
+        this->connection->setURL(url);
+        this->connection->autoConnect = ui->autoConnectCheckBox->isChecked();
+        this->connection->autoReconnect = ui->autoReconnectCheckBox->isChecked();
+
+        if(password != NULL) {
+            DR::savePasswordForULRIdentifier(password, this->connection->URLIdentifier());
+        }
+
+        DRMainWindow::instance()->saveConnections();
+
+        this->close();
+    } else {
+        QApplication::beep();
+    }
+}
+
+
+
+bool DREditConnectionWindow::isFormValid() {
+    if(!ui->addressTextField->text().isEmpty() && !ui->loginTextField->text().isEmpty())
+        return true;
+
+    return false;
+}
+
+void DREditConnectionWindow::on_buttonBox_rejected()
+{
+    this->close();
 }

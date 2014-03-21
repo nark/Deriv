@@ -79,7 +79,6 @@ DRPreferencesWindow::DRPreferencesWindow(QWidget *parent) :
     ui->setupUi(this);
 
     this->settings = new QSettings(QString("read-write.fr"), QString("Deriv"));
-
     this->setDefault();
 }
 
@@ -101,8 +100,8 @@ DRPreferencesWindow::~DRPreferencesWindow()
 
 void DRPreferencesWindow::show() {
     this->loadSettings();
-
-    QMainWindow::show();
+    this->setVisible(true);
+    //DRPreferencesWindow::show();
 }
 
 

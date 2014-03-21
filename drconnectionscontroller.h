@@ -34,21 +34,21 @@ class DRConnectionsController : public QObject
 
 
 public:
-    QList<DRConnection*> *connections;
+    QList<DRServerConnection*> *connections;
 
 
     static DRConnectionsController* instance(QObject* parent = 0);
     static void drop();
 
 
-    void addConnection(DRConnection *connection);
-    void removeConnection(DRConnection *connection);
-    bool hasConnection(DRConnection *connection);
+    void addConnection(DRServerConnection *connection);
+    void removeConnection(DRServerConnection *connection);
+    bool hasConnection(DRServerConnection *connection);
 
 
-    DRConnection* connectionAtIndex(int index);
-    DRConnection* connectionForIdentifier(QString identifier);
-    DRConnection* connectionForURL(wi_url_t *url);
+    DRServerConnection* connectionAtIndex(int index);
+    DRServerConnection* connectionForIdentifier(QString identifier);
+    DRServerConnection* connectionForURL(wi_url_t *url);
 
 
 
@@ -58,8 +58,8 @@ private:
 
 
 signals:
-    void connectionAdded(DRConnection *connection);
-    void connectionRemoved(DRConnection *connection);
+    void connectionAdded(DRServerConnection *connection);
+    void connectionRemoved(DRServerConnection *connection);
 
 
 

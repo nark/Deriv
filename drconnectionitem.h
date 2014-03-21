@@ -26,9 +26,9 @@
 class DRConnectionItem : public QStandardItem
 {
 public:
-    explicit DRConnectionItem(const QString & text, DRConnection *connection);
+    DRConnectionItem(const QString & text, DRServerConnection *connection);
 
-    DRConnection            *connection;
+    DRServerConnection *connection;
 };
 
 #endif // DRCONNECTIONITEM_H

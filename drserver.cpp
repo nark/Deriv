@@ -17,10 +17,93 @@
 */
 
 
-
+#include <QDebug>
 #include "drserver.h"
+#include "dr.h"
 
-DRServer::DRServer(QObject *parent) :
-    QObject(parent)
+
+
+
+DRServer::DRServer(wi_p7_message_t *message) : DRP7MessageObject(message)
 {
+    if(message != NULL)
+        this->setObjectWithMessage(message);
+}
+
+
+void DRServer::setObjectWithMessage(wi_p7_message_t *message) {
+    wi_p7_uint32_t      uint32var = 0;
+    wi_p7_uint64_t      uint64var = 0;
+    wi_string_t         *string;
+    wi_data_t           *banner;
+    wi_date_t           *date;
+
+    if(wi_is_equal(wi_p7_message_name(message), WI_STR("wired.server_info"))) {
+
+        string = wi_p7_message_string_for_name(message, WI_STR("wired.info.application.name"));
+        this->applicationName = WSTOQS(string);
+
+        string = wi_p7_message_string_for_name(message, WI_STR("wired.info.application.version"));
+        this->applicationVersion = WSTOQS(string);
+
+        string = wi_p7_message_string_for_name(message, WI_STR("wired.info.application.build"));
+        this->applicationBuild = WSTOQS(string);
+
+        string = wi_p7_message_string_for_name(message, WI_STR("wired.info.os.name"));
+        this->osName = WSTOQS(string);
+
+        string = wi_p7_message_string_for_name(message, WI_STR("wired.info.os.version"));
+        this->osVersion = WSTOQS(string);
+
+        string = wi_p7_message_string_for_name(message, WI_STR("wired.info.arch"));
+        this->arch = WSTOQS(string);
+
+        string = wi_p7_message_string_for_name(message, WI_STR("wired.info.name"));
+        this->name = WSTOQS(string);
+
+        string = wi_p7_message_string_for_name(message, WI_STR("wired.info.description"));
+        this->description = WSTOQS(string);
+
+        wi_p7_message_get_uint32_for_name(message, &uint32var, WI_STR("wired.info.downloads"));
+        this->downloads = (int)uint32var;
+
+        wi_p7_message_get_uint32_for_name(message, &uint32var, WI_STR("wired.info.uploads"));
+        this->uploads = (int)uint32var;
+
+        wi_p7_message_get_uint32_for_name(message, &uint32var, WI_STR("wired.info.download_speed"));
+        this->downloadSpeed = (int)uint32var;
+
+        wi_p7_message_get_uint32_for_name(message, &uint32var, WI_STR("wired.info.upload_speed"));
+        this->uploadSpeed = (int)uint32var;
+
+        date = wi_p7_message_date_for_name(message, WI_STR("wired.info.start_time"));
+        this->startTime = DR::wiredDateToQDateTime(date);
+
+        wi_p7_message_get_uint64_for_name(message, &uint64var, WI_STR("wired.info.files.count"));
+        this->filesCount = uint64var;
+
+        wi_p7_message_get_uint64_for_name(message, &uint64var, WI_STR("wired.info.files.size"));
+        this->filesSize = uint64var;
+
+        banner = wi_p7_message_data_for_name(message, WI_STR("wired.info.banner"));
+        this->banner = DR::iconFromWiredData(banner);
+    }
+
+}
+
+
+
+
+QString DRServer::versionString() {
+    QString version;
+
+    version.sprintf("%s %s (%s) on %s %s (%s)",
+                    this->applicationName.toStdString().c_str(),
+                    this->applicationVersion.toStdString().c_str(),
+                    this->applicationBuild.toStdString().c_str(),
+                    this->osName.toStdString().c_str(),
+                    this->osVersion.toStdString().c_str(),
+                    this->arch.toStdString().c_str());
+
+    return version;
 }

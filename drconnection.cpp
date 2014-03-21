@@ -20,24 +20,28 @@
 
 #include <QDebug>
 #include <QApplication>
+#include <QMetaObject>
 #include <QMutex>
+#include <QtConcurrent>
 #include "drconnection.h"
 #include "drmainwindow.h"
 #include "drchatcontroller.h"
 #include "druserscontroller.h"
+#include "drfilescontroller.h"
+#include "drboardscontroller.h"
 #include "drpreferenceswindow.h"
 #include "main.h"
 #include "dr.h"
 
 
 
-static QMutex readMutex;
+
 
 
 
 #pragma mark -
 
-DRConnection::DRConnection(wi_url_t *url, QObject *parent) :
+DRServerConnection::DRServerConnection(wi_url_t *url, QObject *parent) :
     QObject(parent)
 {
     this->url = (wi_url_t *)wi_retain(url);
@@ -45,7 +49,9 @@ DRConnection::DRConnection(wi_url_t *url, QObject *parent) :
     this->server = NULL;
     this->serverName = (const char *)0;
     this->chatController = NULL;
+    this->boardsController = NULL;
     this->usersController = NULL;
+    this->filesController = NULL;
 
     this->connected = false;
     this->connecting = false;
@@ -56,7 +62,10 @@ DRConnection::DRConnection(wi_url_t *url, QObject *parent) :
 }
 
 
-DRConnection::~DRConnection() {
+
+
+
+DRServerConnection::~DRServerConnection() {
     wi_release(this->url), this->url = NULL;
 
     if(this->server != NULL)
@@ -67,7 +76,30 @@ DRConnection::~DRConnection() {
 
     if(this->usersController != NULL)
         delete this->usersController, this->usersController = NULL;
+
+    if(this->filesController != NULL)
+        delete this->filesController, this->filesController = NULL;
+
+    if(this->boardsController != NULL)
+        delete this->boardsController, this->boardsController = NULL;
 }
+
+
+
+
+
+
+
+
+
+void DRServerConnection::initSubControllers() {
+    this->chatController = new DRChatController(this);
+    this->usersController = new DRUsersController(this);
+    this->filesController = new DRFilesController(this);
+    this->boardsController = new DRBoardsController(this);
+}
+
+
 
 
 
@@ -76,7 +108,15 @@ DRConnection::~DRConnection() {
 
 #pragma mark -
 
-QString DRConnection::URLIdentifier() {
+void DRServerConnection::setURL(wi_url_t *url) {
+     if(this->url != NULL)
+         wi_release((wi_runtime_instance_t *)this->url), this->url = NULL;
+
+     this->url = (wi_url_t *)wi_retain(url);
+}
+
+
+QString DRServerConnection::URLIdentifier() {
     QString identifier = "";
 
     identifier += QString(wi_string_cstring(wi_url_user(this->url)));
@@ -89,7 +129,7 @@ QString DRConnection::URLIdentifier() {
 }
 
 
-QString DRConnection::URLPassword() {
+QString DRServerConnection::URLPassword() {
     wi_string_t     *string = NULL;
     QString         password = "";
 
@@ -105,13 +145,69 @@ QString DRConnection::URLPassword() {
 
 
 
+QString DRServerConnection::URL() {
+    return QString("wired://%1:%2").arg(
+                WSTOQS(wi_url_host(this->url)),
+                QString::number(wi_url_port(this->url)));
+}
+
+
+
+
+
+
+
+
+void DRServerConnection::addDelegateForConnection(DRConnectionDelegate *delegate) {
+    this->connectionsdelegates.append(delegate);
+}
+
+
+
+
+void DRServerConnection::removeDelegateForConnection(DRConnectionDelegate *delegate) {
+    int index = this->connectionsdelegates.indexOf(delegate);
+
+    if(index >= 0)
+        this->connectionsdelegates.removeAt(index);
+}
+
+
+
+
+
+
+void DRServerConnection::addDelegateForMessage(DRMessageDelegate *delegate, QString message) {
+    QList<DRMessageDelegate*> messageDelegates = this->messagesdelegates.value(message);
+
+    if(messageDelegates.isEmpty())
+        messageDelegates = QList<DRMessageDelegate*>();
+
+    messageDelegates.append(delegate);
+    this->messagesdelegates.insert(message, messageDelegates);
+}
+
+
+
+void DRServerConnection::removeDelegateForMessage(DRMessageDelegate *delegate, QString message) {
+    QList<DRMessageDelegate*> messageDelegates = this->messagesdelegates.value(message);
+
+    int index = messageDelegates.indexOf(delegate);
+
+    if(index >= 0)
+        messageDelegates.removeAt(index);
+}
+
+
+
+
 
 
 
 
 #pragma mark -
 
-void DRConnection::connect(QObject *receiver) {
+void DRServerConnection::connect(QObject *receiver) {
     wi_mutable_url_t *mutable_url;
     QThread* thread = new QThread();
 
@@ -134,23 +230,14 @@ void DRConnection::connect(QObject *receiver) {
             wi_mutable_url_set_password(mutable_url, wi_string_with_cstring(password.toStdString().c_str()));
         }
     }
-
+    // overide URL
     this->url = mutable_url;
-
-    // move the connection object to a background thread
-    this->moveToThread(thread);
 
     // connect the started() thread signal to the connection thread slot
     QObject::connect(thread, SIGNAL(started()), this, SLOT(connectThread()));
 
-    // connect receiver signals
-    QObject::disconnect(this, SIGNAL(connectionSucceeded(DRConnection*)), receiver, SLOT(connectionSucceeded(DRConnection*)));
-    QObject::disconnect(this, SIGNAL(connectionError(DRConnection*,DRError*)), receiver, SLOT(connectionError(DRConnection*,DRError*)));
-    QObject::disconnect(this, SIGNAL(connectionClosed(DRConnection*,DRError*)), receiver, SLOT(connectionClosed(DRConnection*,DRError*)));
-
-    QObject::connect(this, SIGNAL(connectionSucceeded(DRConnection*)), receiver, SLOT(connectionSucceeded(DRConnection*)));
-    QObject::connect(this, SIGNAL(connectionError(DRConnection*,DRError*)), receiver, SLOT(connectionError(DRConnection*,DRError*)));
-    QObject::connect(this, SIGNAL(connectionClosed(DRConnection*,DRError*)), receiver, SLOT(connectionClosed(DRConnection*,DRError*)));
+    // move the connection object to a background thread
+    this->moveToThread(thread);
 
     // start connection in background
     thread->start();
@@ -162,10 +249,14 @@ void DRConnection::connect(QObject *receiver) {
 
 
 
-void DRConnection::disconnect() {
+void DRServerConnection::disconnect() {
     this->connected = false;
 
+    // lock and clean members
     readMutex.lock();
+
+    this->connectionsdelegates.clear();
+    this->messagesdelegates.clear();
 
     if(this->p7_socket)
         wi_p7_socket_close(this->p7_socket);
@@ -176,7 +267,6 @@ void DRConnection::disconnect() {
     if(this->p7_socket != NULL)
         wi_release(this->p7_socket), this->p7_socket = NULL;
 
-    // TODO: check if this is a normal behavior
     if(this->socket != NULL)
         wi_release(this->socket), this->socket = NULL;
 
@@ -189,6 +279,12 @@ void DRConnection::disconnect() {
     if(this->usersController != NULL)
         delete this->usersController, this->usersController = NULL;
 
+    if(this->filesController != NULL)
+        delete this->filesController, this->filesController = NULL;
+
+    if(this->boardsController != NULL)
+        delete this->boardsController, this->boardsController = NULL;
+
     readMutex.unlock();
 }
 
@@ -196,14 +292,28 @@ void DRConnection::disconnect() {
 
 
 
-void DRConnection::sendMessage(wi_p7_message_t *message) {
+bool DRServerConnection::sendMessage(wi_p7_message_t *message) {
+    if(!this->connected)
+        return false;
+
+    readMutex.lock();
+
     wi_boolean_t result = wi_p7_socket_write_message(this->p7_socket, 10, message);
 
+    // check if write failed
     if(!result) {
         DRError *error = this->errorWithCode(WISocketWriteFailed);
 
-        emit connectionError(this, error);
+        //emit connectionError(this, error);
+        this->notifyDelegatesConnectionError(error);
+
+        // TODO: handle disconnection here ?
+
+        return false;
     }
+    readMutex.unlock();
+
+    return true;
 }
 
 
@@ -211,65 +321,7 @@ void DRConnection::sendMessage(wi_p7_message_t *message) {
 
 
 
-
-#pragma mark -
-
- void DRConnection::receiveMessagesLoop(DRError **error) {
-     int state;
-
-     while(this->connected == true) {
-         wi_p7_message_t *message = NULL;
-
-         do {
-             state = wi_socket_wait(this->socket, 0.1);
-         } while((state != WI_SOCKET_READY) && this->connected);
-
-         if(this->connected == false)
-             break;
-
-         readMutex.lock();
-         message = wi_p7_socket_read_message(this->p7_socket, 0.0);
-         readMutex.unlock();
-
-         if(message != NULL) {
-            if(wi_is_equal(wi_p7_message_name(message), WI_STR("wired.send_ping"))) {
-                 wi_p7_message_t *wd_ping_message = wi_p7_message_with_name(WI_STR("wired.ping"), wc_spec);
-                 wi_p7_socket_write_message(this->p7_socket, 10, wd_ping_message);
-
-            }
-            else if(wi_is_equal(wi_p7_message_name(message), WI_STR("wired.ping"))) {
-
-            }
-            else if(wi_is_equal(wi_p7_message_name(message), WI_STR("wired.error"))) {
-                 emit receivedError(message);
-
-            }
-            else {
-                 emit receivedMessage(message);
-            }
-         } else {
-             if(wi_error_domain() == WI_ERROR_DOMAIN_ERRNO && wi_error_code() == ETIMEDOUT) {
-                int code = wi_socket_error(this->socket);
-                qDebug() << "Socket error: ETIMEDOUT error : " << code;
-             }
-             *error = this->errorWithCode(WISocketReadFailed);
-
-             this->connected == false;
-             break;
-        }
-        QCoreApplication::processEvents();
-     }
-
-     qDebug() << "end message loop";
-}
-
-
-
-
-
-
-
-void DRConnection::connectThread() {
+void DRServerConnection::connectThread() {
     wi_pool_t           *pool;
     DRError             *error = NULL;
 
@@ -290,7 +342,7 @@ void DRConnection::connectThread() {
         // if error, back to main thread
         this->moveToThread(QApplication::instance()->thread());
         // notify receiver
-        emit connectionError(this, error);
+        this->notifyDelegatesConnectionError(error);
         return;
     }
 
@@ -300,37 +352,33 @@ void DRConnection::connectThread() {
         // if error, back to main thread
         this->moveToThread(QApplication::instance()->thread());
         // notify receiver
-        emit connectionError(this, error);
+        this->notifyDelegatesConnectionError(error);
         return;
     }
 
-    // init sub controllers
-    this->chatController = new DRChatController(this);
-    this->usersController = new DRUsersController(this);
-
-    // send user infos
-    this->sendUserInfo();
-    // join public chat
-    this->joinPublicChat();
+    // move back the connection to the main thread
+    this->moveToThread(QApplication::instance()->thread());
 
     // we are now connected
     this->connecting = false;
     this->connected = true;
 
-    // move back the connection to the main thread
-    this->moveToThread(QApplication::instance()->thread());
+    // init sub controllers
+    QMetaObject::invokeMethod(this, "initSubControllers", Qt::QueuedConnection);
+    //initSubControllers();
+
 
     // notify connection succeeded
-    emit connectionSucceeded(this);
+    this->notifyDelegatesConnectionSucceeded();
 
     // start the receive message loop
-    this->receiveMessagesLoop(&error);
+    this->receiveMessagesThread(&error);
 
     // clean the connection
     this->disconnect();
 
     // notify connection is closed
-    emit connectionClosed(this, error);
+    this->notifyDelegatesConnectionClosed(error);
 
     // release the curent libwired pool
     wi_release(pool);
@@ -343,10 +391,75 @@ void DRConnection::connectThread() {
 
 
 
+void DRServerConnection::receiveMessagesThread(DRError **error) {
+    int state;
+
+    // loop while we are connected
+    while(this->connected == true) {
+        wi_p7_message_t *message = NULL;
+
+        // wait socket to be ready for reading
+        do {
+            state = wi_socket_wait(this->socket, 0.1);
+            //QCoreApplication::processEvents();
+        } while((state != WI_SOCKET_READY) && this->connected);
+
+        // re-check connected state
+        if(this->connected == false)
+            break;
+
+        // lock and read message
+        readMutex.lock();
+        message = wi_p7_socket_read_message(this->p7_socket, 0.0);
+        readMutex.unlock();
+
+        if(message != NULL) {
+           // manage ping
+           if(wi_is_equal(wi_p7_message_name(message), WI_STR("wired.send_ping"))) {
+                wi_p7_message_t *wd_ping_message = wi_p7_message_with_name(WI_STR("wired.ping"), wc_spec);
+                wi_p7_socket_write_message(this->p7_socket, 10, wd_ping_message);
+
+           }
+           else if(wi_is_equal(wi_p7_message_name(message), WI_STR("wired.ping"))) {
+
+           }
+           // handle error message with error class
+           else if(wi_is_equal(wi_p7_message_name(message), WI_STR("wired.error"))) {
+               DRError *error = new DRError(message);
+               //emit receivedError(error);
+               this->notifyDelegatesConnectionError(error);
+           }
+           // notify message to receivers
+           else {
+                this->notifyDelegatesReceivedMessage(message);
+           }
+        } else {
+            // no message, treat error then
+            // weird check from Wired Client sources, have to investigate
+            if(wi_error_domain() == WI_ERROR_DOMAIN_ERRNO && wi_error_code() == ETIMEDOUT) {
+               int code = wi_socket_error(this->socket);
+               qDebug() << "Socket error: ETIMEDOUT error : " << code;
+            }
+            *error = this->errorWithCode(WISocketReadFailed);
+
+            this->connected == false;
+            break;
+       }
+       // process application events in order to make the loop
+       // not blocking the UI (useless ?)
+       QCoreApplication::processEvents();
+    }
+}
+
+
+
+
+
+
 
 #pragma mark -
 
- void DRConnection::sendUserInfo() {
+ void DRServerConnection::sendUserInfo() {
      wi_data_t *icon;
      wi_p7_message_t *message;
      QString string;
@@ -369,7 +482,7 @@ void DRConnection::connectThread() {
 
 
 
- void DRConnection::joinPublicChat() {
+ void DRServerConnection::joinPublicChat() {
      wi_p7_message_t *message;
 
      message = wi_p7_message_with_name(WI_STR("wired.chat.join_chat"), wc_spec);
@@ -385,7 +498,7 @@ void DRConnection::connectThread() {
 
 #pragma mark -
 
-wi_p7_socket_t * DRConnection::connectSocket(DRError **error) {
+wi_p7_socket_t * DRServerConnection::connectSocket(DRError **error) {
     wi_enumerator_t		*enumerator;
     wi_array_t			*addresses;
     wi_address_t		*address;
@@ -403,7 +516,6 @@ wi_p7_socket_t * DRConnection::connectSocket(DRError **error) {
 
             if(!this->socket) {
                 *error = this->errorWithCode(WISocketConnectFailed);
-
                 continue;
             }
 
@@ -430,7 +542,7 @@ wi_p7_socket_t * DRConnection::connectSocket(DRError **error) {
 
             if(!wi_p7_socket_connect(this->p7_socket,
                                      10.0,
-                                     WI_P7_ENCRYPTION_RSA_AES256_SHA1 | WI_P7_CHECKSUM_SHA1,
+                                     WI_P7_ENCRYPTION_RSA_AES256_SHA1 | WI_P7_CHECKSUM_SHA1 | WI_P7_COMPRESSION_DEFLATE,
                                      WI_P7_BINARY,
                                      wi_url_user(this->url),
                                      wi_string_sha1(password))) {
@@ -460,7 +572,7 @@ wi_p7_socket_t * DRConnection::connectSocket(DRError **error) {
 
 
 
-wi_boolean_t DRConnection::login(DRError **error) {
+wi_boolean_t DRServerConnection::login(DRError **error) {
     wi_p7_message_t		*message;
     wi_string_t         *password, *string;
     wi_data_t           *banner;
@@ -480,38 +592,11 @@ wi_boolean_t DRConnection::login(DRError **error) {
 
     if(wi_is_equal(wi_p7_message_name(message), WI_STR("wired.server_info"))) {
         if(this->server == NULL)
-             this->server = new DRServer();
+             this->server = new DRServer(message);
+        else
+            this->server->setObjectWithMessage(message);
 
-        string = wi_p7_message_string_for_name(message, WI_STR("wired.info.application.name"));
-        this->server->applicationName = string;
-
-        string = wi_p7_message_string_for_name(message, WI_STR("wired.info.application.version"));
-        this->server->applicationVersion = string;
-
-        string = wi_p7_message_string_for_name(message, WI_STR("wired.info.application.build"));
-        this->server->applicationBuild = string;
-
-        string = wi_p7_message_string_for_name(message, WI_STR("wired.info.os.name"));
-        this->server->osName = string;
-
-        string = wi_p7_message_string_for_name(message, WI_STR("wired.info.os.version"));
-        this->server->osVersion = string;
-
-        string = wi_p7_message_string_for_name(message, WI_STR("wired.info.arch"));
-        this->server->arch = string;
-
-        string = wi_p7_message_string_for_name(message, WI_STR("wired.info.name"));
-        this->server->name = string;
-
-        string = wi_p7_message_string_for_name(message, WI_STR("wired.info.description"));
-        this->server->description = string;
-
-        banner = wi_p7_message_data_for_name(message, WI_STR("wired.info.banner"));
-        this->server->banner = banner;
-
-        wi_log_debug(WI_STR("Connected to \"%@\""), wi_p7_message_string_for_name(message, WI_STR("wired.info.name")));
-
-        this->serverName = QString(wi_string_cstring(this->server->name));
+        this->serverName = this->server->name;
     }
 
     wi_log_debug(WI_STR("Logging in as \"%@\"..."), wi_url_user(this->url));
@@ -561,7 +646,7 @@ wi_boolean_t DRConnection::login(DRError **error) {
 
 
 
-wi_p7_message_t * DRConnection::writeMessageAndReadReply(wi_p7_message_t *message, wi_string_t *expected_error) {
+wi_p7_message_t * DRServerConnection::writeMessageAndReadReply(wi_p7_message_t *message, wi_string_t *expected_error) {
     wi_string_t		*name, *error;
 
     if(!wi_p7_socket_write_message(this->p7_socket, 0.0, message))
@@ -591,7 +676,7 @@ wi_p7_message_t * DRConnection::writeMessageAndReadReply(wi_p7_message_t *messag
 
 
 
-DRError* DRConnection::errorWithCode(int code, QString info) {
+DRError* DRServerConnection::errorWithCode(int code, QString info) {
     QHash<DRErrorKeys, QString> params;
 
     params[DRErrorDescriptionKey] = this->URLIdentifier();
@@ -601,3 +686,108 @@ DRError* DRConnection::errorWithCode(int code, QString info) {
 
     return new DRError(code, params, DR_ERROR_DOMAIN_WIRED);
 }
+
+
+
+
+
+void DRServerConnection::notifyDelegatesConnectionSucceeded() {
+    this->moveToThread(QApplication::instance()->thread());
+
+    qRegisterMetaType<DRServerConnection*>("DRServerConnection*");
+
+    foreach(DRConnectionDelegate *delegate, this->connectionsdelegates) {
+        delegateMutex.lock();
+        QMetaObject::invokeMethod(dynamic_cast<QObject*>(delegate),
+                                  "connectionSucceeded",
+                                  Qt::QueuedConnection,
+                                  Q_ARG(DRServerConnection*, this));
+        delegateMutex.unlock();
+    }
+}
+
+
+
+
+void DRServerConnection::notifyDelegatesConnectionError(DRError *error) {
+    this->moveToThread(QApplication::instance()->thread());
+
+    foreach(DRConnectionDelegate *delegate, this->connectionsdelegates) {
+        delegateMutex.lock();
+        QMetaObject::invokeMethod(dynamic_cast<QObject*>(delegate),
+                                  "connectionError",
+                                  Qt::QueuedConnection,
+                                  Q_ARG(DRServerConnection*, this),
+                                  Q_ARG(DRError*, error));
+        delegateMutex.unlock();
+    }
+}
+
+
+
+
+void DRServerConnection::notifyDelegatesConnectionClosed(DRError *error) {
+    this->moveToThread(QApplication::instance()->thread());
+
+    qRegisterMetaType<wi_p7_message_t*>("DRError*");
+
+    foreach(DRConnectionDelegate *delegate, this->connectionsdelegates) {
+        delegateMutex.lock();
+        QMetaObject::invokeMethod(dynamic_cast<QObject*>(delegate),
+                                  "connectionClosed",
+                                  Qt::QueuedConnection,
+                                  Q_ARG(DRServerConnection*, this),
+                                  Q_ARG(DRError*, error));
+
+        delegateMutex.unlock();
+    }
+}
+
+
+
+void DRServerConnection::notifyDelegatesReceivedMessage(wi_p7_message_t *message) {
+    this->moveToThread(QApplication::instance()->thread());
+
+    qRegisterMetaType<DRServerConnection*>("DRServerConnection*");
+    qRegisterMetaType<wi_p7_message_t*>("wi_p7_message_t*");
+
+    QString messageName = WSTOQS(wi_p7_message_name(message));
+    QList<DRMessageDelegate*> messageDelegates = this->messagesdelegates.value(messageName);
+
+    foreach(DRMessageDelegate *delegate, messageDelegates) {
+        delegateMutex.lock();
+        QMetaObject::invokeMethod(dynamic_cast<QObject*>(delegate),
+                                  "receivedMessage",
+                                  Qt::QueuedConnection,
+                                  Q_ARG(wi_p7_message_t*, message),
+                                  Q_ARG(DRServerConnection*, this));
+        delegateMutex.unlock();
+    }
+}
+
+
+
+void DRServerConnection::notifyDelegatesReceivedError(wi_p7_message_t *message, DRError *error) {
+    this->moveToThread(QApplication::instance()->thread());
+
+    qRegisterMetaType<wi_p7_message_t*>("DRError*");
+    qRegisterMetaType<wi_p7_message_t*>("wi_p7_message_t*");
+
+    QString messageName = WSTOQS(wi_p7_message_name(message));
+    QList<DRMessageDelegate*> messageDelegates = this->messagesdelegates.value(messageName);
+
+    foreach(DRMessageDelegate *delegate, messageDelegates) {
+        delegateMutex.lock();
+        QMetaObject::invokeMethod(dynamic_cast<QObject*>(delegate),
+                                  "receivedError",
+                                  Qt::QueuedConnection,
+                                  Q_ARG(DRError*, error),
+                                  Q_ARG(DRServerConnection*, this));
+        delegateMutex.unlock();
+    }
+}
+
+
+
+
+

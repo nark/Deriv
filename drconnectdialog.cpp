@@ -55,6 +55,7 @@ DRConnectDialog::~DRConnectDialog()
 
 
 
+
 #pragma mark -
 
 void DRConnectDialog::accept()
@@ -101,7 +102,7 @@ void DRConnectDialog::accept()
     this->connection = DRConnectionsController::instance()->connectionForURL(url);
 
     if(this->connection == NULL) {
-        this->connection = new DRConnection(url);
+        this->connection = new DRServerConnection(url);
 
         DRConnectionsController::instance()->addConnection(this->connection);
 

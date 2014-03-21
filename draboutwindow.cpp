@@ -65,6 +65,8 @@ DRAboutWindow::DRAboutWindow(QWidget *parent) :
     ui(new Ui::DRAboutWindow)
 {
     ui->setupUi(this);
+
+    ui->pushButton->setMouseTracking(false);
 }
 
 DRAboutWindow::~DRAboutWindow()

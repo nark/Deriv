@@ -20,15 +20,15 @@
 
 #ifndef DRUSER_H
 #define DRUSER_H
-
+#include "drp7messageobject.h"
 #include <QObject>
 #include <QIcon>
 #include <wired/wired.h>
 
-class DRUser : public QObject
+class DRUser : public DRP7MessageObject
 {
     Q_OBJECT
-public:    
+public:
     QString nick;
     QString status;
     QIcon icon;
@@ -37,17 +37,8 @@ public:
     wi_boolean_t isIdle;
     wi_p7_uint32_t color;
 
-    explicit DRUser(QObject *parent = 0);
-    explicit DRUser(wi_p7_message_t *message, QObject *parent = 0);
-
-signals:
-
-public slots:
-    void setUserWithMessage(wi_p7_message_t *message);
-
-
-private:
-    QIcon iconForBase64String(QString base64);
+    explicit DRUser(wi_p7_message_t *message);
+    void setObjectWithMessage(wi_p7_message_t *message);
 
 };
 

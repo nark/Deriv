@@ -20,7 +20,7 @@
 
 #include "drconnectionitem.h"
 
-DRConnectionItem::DRConnectionItem(const QString &text, DRConnection *connection) :
+DRConnectionItem::DRConnectionItem(const QString &text, DRServerConnection *connection) :
     QStandardItem(text) {
     this->connection = connection;
 }

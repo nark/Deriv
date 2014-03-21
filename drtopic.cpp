@@ -19,34 +19,45 @@
 
 
 #include "drtopic.h"
+#include "dr.h"
 
-DRTopic::DRTopic(wi_p7_message_t *message, QObject *parent) :
-    QObject(parent)
+
+DRTopic::DRTopic(wi_p7_message_t *message) : DRP7MessageObject(message)
 {
-    this->topic = NULL;
-    this->nick = NULL;
-    this->time = NULL;
-
     if(message != NULL)
-        this->setTopicWithMessage(message);
+        this->setObjectWithMessage(message);
 }
 
 
 
-void DRTopic::setTopicWithMessage(wi_p7_message_t *message) {
-    this->topic = new QString(wi_string_cstring(wi_p7_message_string_for_name(message, WI_STR("wired.chat.topic.topic"))));
-    this->nick = new QString(wi_string_cstring(wi_p7_message_string_for_name(message, WI_STR("wired.user.nick"))));
+void DRTopic::setObjectWithMessage(wi_p7_message_t *message) {
+    this->topic = QString(wi_string_cstring(wi_p7_message_string_for_name(message, WI_STR("wired.chat.topic.topic"))));
+    this->nick = QString(wi_string_cstring(wi_p7_message_string_for_name(message, WI_STR("wired.user.nick"))));
 
     wi_date_t *date = wi_p7_message_date_for_name(message, WI_STR("wired.chat.topic.time"));
-    this->time = new QDateTime(QDateTime::fromString(QString(wi_string_cstring(wi_date_rfc3339_string(date)))));
+    this->time = DR::wiredDateToQDateTime(date);
 }
 
 
-QString DRTopic::qString() {
-    if (this->topic == NULL || this->topic->length() <= 0)
+
+
+QString DRTopic::formattedTopic() {
+    if (this->topic.isNull() || this->topic.isEmpty())
         return QString("");
 
-//    wi_string_t *string = wi_string_with_format(WI_STR("%@ by %@ on %@"), this->topic, this->nick, wi_date_sqlite3_string(this->time));
+    return this->topic;
+}
 
-//    return QString(wi_string_cstring(string));
+QString DRTopic::formattedTopicByUser() {
+    if (this->topic.isNull() || this->topic.isEmpty())
+        return QString("");
+
+    return QString("%1 by %2").arg(this->topic, this->nick);
+}
+
+QString DRTopic::formattedTopicByUserWithDate() {
+    if (this->topic.isNull() || this->topic.isEmpty())
+        return QString("");
+
+    return QString("%1 by %2 - %3").arg(this->topic, this->nick, this->time.toString());
 }

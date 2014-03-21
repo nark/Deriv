@@ -52,7 +52,6 @@ void DRUserItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &op
 
     QFont font = QApplication::font();
     QFont SubFont = QApplication::font();
-    //font.setPixelSize(font.weight()+);
     font.setBold(true);
     SubFont.setWeight(SubFont.weight()-2);
     QFontMetrics fm(font);
@@ -60,6 +59,10 @@ void DRUserItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &op
     QIcon icon = qvariant_cast<QIcon>(index.data(IconRole));
     QString headerText = qvariant_cast<QString>(index.data(headerTextRole));
     QString subText = qvariant_cast<QString>(index.data(subHeaderTextrole));
+    bool idle = qvariant_cast<bool>(index.data(IdleRole));
+
+    if(idle)
+        painter->setOpacity(0.5);
 
     QSize iconsize = icon.actualSize(option.decorationSize);
 

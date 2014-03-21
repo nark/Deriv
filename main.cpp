@@ -41,42 +41,61 @@ wi_p7_spec_t *wc_spec;
 
 int main(int argc, char *argv[])
 {
-    QApplication a(argc, argv);
+    wi_pool_t *pool;
     DRError *error = NULL;
 
+    // init Qt app
+    QApplication a(argc, argv);
+
+    // set internal app settings
     QCoreApplication::setOrganizationName("Read-Write.fr");
     QCoreApplication::setOrganizationDomain("read-write.fr");
     QCoreApplication::setApplicationName("Deriv");
 
-    wi_pool_t *pool;
-
+    // initialize libwired base
     wi_initialize();
+    // set program arguments to libwired (unused here)
     wi_load(argc, (const char **)argv);
 
+    // configure libwired logging
     wi_log_tool = true;
     wi_log_level = WI_LOG_INFO;
 
+    // init libwired global memory pool
     pool = wi_pool_init(wi_pool_alloc());
 
+    // load Wired 2.0 specification
     DR::loadSpecification(&wc_spec, &error);
 
+    // if specification loaded
     if(error == NULL) {
+        // display the main window
         DRMainWindow::instance()->show();
 
+        // display the connect dialog if DRShowConnectAtStartup user setting is true
         if(DRPreferencesWindow::instance()->settings->value(DRShowConnectAtStartup).toBool())
             DRMainWindow::instance()->on_actionNewConnection_triggered();
+
+    // if specification load error
     } else {
+        // display the error
+        // NOTE: maybe an event loop is needed here ?
         DR::showError(error);
 
+        // release the global libwired pool
         wi_release(pool);
 
+        // terminate the app
         return error->errorCode();
     }
 
+    // start the app event loop
     int result = a.exec();
 
+    // release the global libwired pool
     wi_release(pool);
 
+    // terminate the app
     return result;
 }
 

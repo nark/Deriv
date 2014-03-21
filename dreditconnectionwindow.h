@@ -35,11 +35,18 @@ public:
     explicit DREditConnectionWindow(QWidget *parent = 0);
     ~DREditConnectionWindow();
 
-    void setConnection(DRConnection *connection);
+    void setConnection(DRServerConnection *connection);
+
+private slots:
+    void on_buttonBox_accepted();
+
+    void on_buttonBox_rejected();
 
 private:
     Ui::DREditConnectionWindow *ui;
-    DRConnection *connection;
+    DRServerConnection *connection;
+
+    bool isFormValid();
 };
 
 #endif // DREDITCONNECTIONWINDOW_H

@@ -25,14 +25,25 @@
 #include <QObject>
 
 
-class DRConnectionController : public QObject
+class DRConnectionController : public QObject, public DRMessageDelegate, public DRConnectionDelegate
 {
     Q_OBJECT
 public:
-    DRConnectionController(DRConnection* connection, QObject *parent = 0);
+    DRConnectionController(DRServerConnection* connection);
     ~DRConnectionController();
+
+    virtual void connectReceiver(QObject *object);
+    virtual void disconnectReceiver(QObject *object);
+
+public slots:
+    void connectionSucceeded(DRServerConnection *connection);
+    void connectionError(DRServerConnection *connection, DRError *error);
+    void connectionClosed(DRServerConnection *connection, DRError *error = NULL);
+    void receivedMessage(wi_p7_message_t *message, DRServerConnection *connection);
+    void receivedError(DRError *error, DRServerConnection *connection);
+
 protected:
-    DRConnection* connection;
+    DRServerConnection* connection;
 
 signals:
 

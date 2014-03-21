@@ -40,7 +40,7 @@ private:
     void accept();
 
     Ui::DRConnectDialog *ui;
-    DRConnection *connection;
+    DRServerConnection *connection;
 };
 
 #endif // DRCONNECTDIALOG_H

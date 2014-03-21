@@ -50,7 +50,6 @@ public:
     QSettings *settings;
 
     void show();
-    //bool saveConnections(DRConnection *);
 
 
 signals:

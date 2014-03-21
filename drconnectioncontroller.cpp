@@ -20,9 +20,7 @@
 
 #include "drconnectioncontroller.h"
 
-DRConnectionController::DRConnectionController(DRConnection * connection, QObject *parent) :
-    QObject(parent)
-{
+DRConnectionController::DRConnectionController(DRServerConnection * connection) {
     this->connection = connection;
 }
 
@@ -31,3 +29,38 @@ DRConnectionController::~DRConnectionController() {
 
 }
 
+
+
+
+void DRConnectionController::connectReceiver(QObject *object) {
+
+}
+
+void DRConnectionController::disconnectReceiver(QObject *object) {
+
+}
+
+
+
+
+
+void DRConnectionController::connectionSucceeded(DRServerConnection *connection) {
+
+}
+
+void DRConnectionController::connectionError(DRServerConnection *connection, DRError *error) {
+
+}
+
+void DRConnectionController::connectionClosed(DRServerConnection *connection, DRError *error) {
+
+}
+
+
+void DRConnectionController::receivedMessage(wi_p7_message_t *message, DRServerConnection *connection) {
+
+}
+
+void DRConnectionController::receivedError(DRError *error, DRServerConnection *connection) {
+
+}

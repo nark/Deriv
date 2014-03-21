@@ -28,10 +28,12 @@
 #include <QDebug>
 #include <QProgressBar>
 #include <QLabel>
+#include <QList>
 #include <wired/wired.h>
 
 #include "drconnection.h"
 #include "drconnectionitem.h"
+#include "drboarditem.h"
 #include "druser.h"
 #include "drtopic.h"
 #include "drerror.h"
@@ -42,7 +44,7 @@ namespace Ui {
 class DRMainWindow;
 }
 
-class DRMainWindow : public QMainWindow
+class DRMainWindow : public QMainWindow, public DRConnectionDelegate
 {
     Q_OBJECT
 
@@ -58,19 +60,22 @@ public:
 
     void                    close();
 
-    void                    selectConnection(DRConnection *connection);
-    void                    setConnection(DRConnection *connection);
+    void                    selectConnection(DRServerConnection *connection);
+    void                    setConnection(DRServerConnection *connection);
 
 public slots:
+    void                    connect();
     void                    disconnect();
     void                    removeConnection();
     void                    editConnection();
+    void                    connectionInfo();
+    void                    saveConnections();
 
-    void                    connectionSucceeded(DRConnection *connection);
-    void                    connectionError(DRConnection *connection, DRError* error);
-    void                    connectionClosed(DRConnection *connection, DRError *error);
+    void                    connectionSucceeded(DRServerConnection *connection);
+    void                    connectionError(DRServerConnection *connection, DRError* error);
+    void                    connectionClosed(DRServerConnection *connection, DRError *error);
 
-    void                    receivedError(wi_p7_message_t *message);
+    void                    receivedError(DRError *error);
     void                    on_actionNewConnection_triggered();
 
 private slots:
@@ -78,26 +83,42 @@ private slots:
     void                    treeViewDoubleClicked(QModelIndex index);
     void                    treeViewContextMenu(const QPoint &point);
 
-    void                    connectionAdded(DRConnection* connection);
+    void                    boardsTreeViewSelectionDidChange();
+    void                    boardsTreeViewContextMenu(const QPoint &point);
 
-    void                    chatControllerReceivedChatSay(DRConnection*, QString string, DRUser *user);
-    void                    chatControllerReceivedChatMe(DRConnection*, QString string, DRUser *user);
-    void                    chatControllerTopicChanged(DRConnection*, DRTopic *topic);
+    void                    connectionAdded(DRServerConnection* connection);
 
-    void                    usersControllerUserListLoaded(DRConnection*);
-    void                    usersControllerUserJoined(DRConnection*, DRUser *user);
-    void                    usersControllerUserLeave(DRConnection*, DRUser *user);
+    void                    chatControllerReceivedChatSay(DRServerConnection*, QString string, DRUser *user);
+    void                    chatControllerReceivedChatMe(DRServerConnection*, QString string, DRUser *user);
+    void                    chatControllerTopicChanged(DRServerConnection*, DRTopic *topic, bool init);
+
+    void                    usersControllerUserListLoaded(DRServerConnection*);
+    void                    usersControllerUserJoined(DRServerConnection*, DRUser *user);
+    void                    usersControllerUserLeave(DRServerConnection*, DRUser *user);
+
+    void                    filesReloaded(DRServerConnection *connection);
 
     void                    on_chatInputEdit_returnPressed();
 
+    void on_actionAbout_triggered();
 
     void on_actionPreferences_triggered();
 
-    void on_actionAbout_triggered();
+    void on_actionPreferences_triggered(bool checked);
+
+    void on_actionChat_triggered();
+
+    void on_actionBoards_triggered();
+
+    void on_actionMessages_triggered();
+
+    void on_actionFiles_triggered();
+
+    void on_actionTransfers_triggered();
 
 private:
     Ui::DRMainWindow        *ui;
-    DRConnection            *connection;
+    DRServerConnection            *connection;
 
     QStandardItemModel      *treeModel;
     QStandardItem           *rootNode;
@@ -109,18 +130,27 @@ private:
     QProgressBar            *progressBar;
     QLabel                  *progressLabel;
 
+    QList<QString>          chatCommands;
+
     void                    reloadTreeView();
     void                    reloadUserList();
     void                    reloadChatView();
+    void                    reloadFilesView();
+    void                    reloadBoardsView();
+    void                    reloadThreadsView();
 
     void                    loadConnections();
-    void                    saveConnections();
 
-    void                    appendChat(QString string, DRConnection *connection);
+    void                    appendChat(QString string, DRServerConnection *connection);
 
-    DRConnection*           selectedConnection();
-    DRConnectionItem*       itemForConnection(DRConnection *connection);
-    bool                    hasItemForConnection(DRConnection *connection);
+    DRServerConnection*     selectedConnection();
+    DRConnectionItem*       itemForConnection(DRServerConnection *connection);
+    bool                    hasItemForConnection(DRServerConnection *connection);
+
+    DRBoardItem*            selectedBoardForConnection(DRServerConnection *connection);
+
+    void                    toolbarActionClicked();
+    bool                    executeCommand(QString string, DRServerConnection *connection);
 };
 
 
