@@ -89,7 +89,7 @@ private:
     QString path;
     QString name;
     QDateTime creationTime;
-    uint64_t dataSize;
+    qulonglong dataSize;
     DRFileType type;
 };
 
